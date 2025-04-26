@@ -2,7 +2,8 @@
   "imports": {
     "hono": "jsr:@hono/hono@^4.7.7",
     "uuid": "npm:uuid@^9.0.0",
-    "pg": "npm:pg@^8.14.1"
+    "pg": "npm:pg@^8.14.1",
+    "jose": "https://deno.land/x/jose@v4.0.0/index.ts"
   },
   
   "tasks": {
