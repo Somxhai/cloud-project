@@ -57,7 +57,7 @@ export default function MainNavbar() {
   return (
     <>
       {/* bar สีแดงด้านบนเต็มจอ */}
-      <div className="w-full h-[6px] bg-[#ef4653]" />
+      <div className="w-full h-[16px] bg-[#ef4653]" />
 
       <Navbar fluid rounded={false} className="border-b border-gray-200 bg-white">
         {/* logo / brand */}
