@@ -1,0 +1,15 @@
+class-list.json
+pid
+/vscode/
+/.env
+
+/node_modules/
+.//readme.md
+.//.gitignore
+
+./backend/images/item/*
+./backend/images/review/*
+
+/.DS_Store
+
+!.env.example
