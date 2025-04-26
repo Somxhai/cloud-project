@@ -1,0 +1,14 @@
+[
+    {
+      "activity_id": 101,
+      "title": "วิ่งมาราธอน",
+      "description": "วิ่งเพื่อสุขภาพ",
+      "date": "2025-06-01",
+      "type": "กีฬา",
+      "status": "active",
+      "amount": 2,
+      "max_amount": 100,
+      "skill_id": 1,
+      "picture": "marathon.jpg"
+    }
+  ]
