@@ -1,0 +1,16 @@
+[
+  {
+    "user_id": 1,
+    "name": "สมชาย ใจดี",
+    "role": "student",
+    "username": "somchai",
+    "password": "pass123"
+  },
+  {
+    "user_id": 2,
+    "name": "สมศรี รักเรียน",
+    "role": "student",
+    "username": "somsri",
+    "password": "pass456"
+  }
+]
