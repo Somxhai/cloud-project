@@ -41,15 +41,3 @@ export const safeQuery = async <T>(
     throw new Error(errorMessage);
   });
 };
-
-export const calculateTotalPrice = (
-  price_per_day: number,
-  start_date: Date,
-  end_date: Date,
-): number => {
-  const start = new Date(start_date);
-  const end = new Date(end_date);
-  const timeDiff = Math.abs(end.getTime() - start.getTime());
-  const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-  return price_per_day * dayDiff;
-};
