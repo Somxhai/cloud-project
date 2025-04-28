@@ -15,14 +15,14 @@ export const getAllActivity = async () => {
 
 // ฟังก์ชันนี้จะได้รายละเอียดกิจกรรมตาม activityId
 export const getActivityById = async (activityId: UUIDTypes) => {
-  return await safeQuery<Activity | null>(
+  return await safeQuery(
     (client) =>
-      client.query(
+      client.query<Activity>(
         `SELECT * FROM "activity" WHERE id = $1`,
         [activityId]
       ),
     "Failed to get activity by ID"
-  );
+  ).then((res) => (res as { rows: Activity[] }).rows[0]);
 };
 
 // ฟังก์ชันสำหรับการสร้างกิจกรรมใหม่

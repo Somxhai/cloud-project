@@ -1,7 +1,6 @@
 // db/setup.ts
-import pg from "npm:pg";
+import { Pool } from "npm:pg";
 
-const { Pool } = pg;
 import { setupDatabase } from "../lib/db.ts";
 
 export const pool = new Pool({
