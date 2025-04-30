@@ -1,4 +1,5 @@
-import { CognitoIdentityServiceProvider } from "aws-sdk";
+import AWS from "aws-sdk"; // Import the CommonJS module
+const { CognitoIdentityServiceProvider } = AWS; // Destructure the Cognito service
 
 const cognito = new CognitoIdentityServiceProvider();
 

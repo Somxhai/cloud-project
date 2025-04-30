@@ -1,5 +1,7 @@
 // lib/db.ts
-import { Client } from "pg"; // ถ้าใช้ postgres
+import "https://deno.land/x/dotenv@v3.2.2/load.ts";
+import pkg from "pg"; // Import the CommonJS module
+const { Client } = pkg; // Destructure the Client from the package
 import { PoolClient } from "npm:pg";
 import {
   CREATE_STUDENT_TABLE,
@@ -13,11 +15,12 @@ import {
 
 // เชื่อม Database
 export const client = new Client({
-  user: "your_db_user",
-  password: "your_db_password",
-  database: "your_db_name",
-  hostname: "localhost",
-  port: 5432,
+  user: Deno.env.get("PGUSERNAME"),
+  password: Deno.env.get("PGPASSWORD"),
+  database: Deno.env.get("PGDATABASE"),
+  hostname: Deno.env.get("PGHOST"), // Replace with your RDS endpoint
+  port: parseInt(Deno.env.get("PGPORT") || "5432"),
+  ssl: true
 });
 
 // Init database tables
