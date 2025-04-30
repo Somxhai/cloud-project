@@ -1,37 +1,46 @@
-// cognito.ts
 import { CognitoIdentityServiceProvider } from "aws-sdk";
 
 const cognito = new CognitoIdentityServiceProvider();
 
+// ใส่ค่า environment จริงจาก AWS Cognito
+const userPoolId = Deno.env.get("COGNITO_USER_POOL_ID")!;
+const clientId = Deno.env.get("COGNITO_CLIENT_ID")!;
+
 export const createUserInCognito = async () => {
-  const params = {
-    Username: "testuser", // ใช้ชื่อผู้ใช้ที่ต้องการ
-    Password: "TestPassword123", // รหัสผ่าน
-    UserPoolId: "your-user-pool-id", // ID ของ User Pool
-    ClientId: "your-client-id", // Client ID
-    Attributes: [
-      {
-        Name: "email",
-        Value: "testuser@example.com",
-      },
+  const username = "testuser";
+
+  await cognito.adminCreateUser({
+    Username: username,
+    UserPoolId: userPoolId,
+    TemporaryPassword: "TestPassword123!",
+    UserAttributes: [
+      { Name: "email", Value: "testuser@example.com" },
     ],
-  };
+    MessageAction: "SUPPRESS", // ไม่ส่งเมล
+  }).promise();
 
-  const user = await cognito.adminCreateUser(params).promise();
+  // ตั้งรหัสผ่านให้เป็น permanent
+  await cognito.adminSetUserPassword({
+    Username: username,
+    UserPoolId: userPoolId,
+    Password: "TestPassword123!",
+    Permanent: true,
+  }).promise();
 
-  return user;
+  console.log("✅ User created");
 };
 
 export const loginUserInCognito = async () => {
-  const params = {
+  const result = await cognito.initiateAuth({
     AuthFlow: "USER_PASSWORD_AUTH",
-    ClientId: "your-client-id", // Client ID
+    ClientId: clientId,
     AuthParameters: {
-      USERNAME: "testuser", // ชื่อผู้ใช้
-      PASSWORD: "TestPassword123", // รหัสผ่าน
+      USERNAME: "testuser",
+      PASSWORD: "TestPassword123!",
     },
-  };
+  }).promise();
 
-  const result = await cognito.initiateAuth(params).promise();
-  return result.AuthenticationResult?.IdToken;
+  const token = result.AuthenticationResult?.IdToken;
+  console.log("✅ Login successful. ID Token:", token);
+  return token;
 };

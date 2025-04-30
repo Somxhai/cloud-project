@@ -1,7 +1,7 @@
 import { assertEquals, assertArrayIncludes } from "jsr:@std/assert";
 import { activityApp } from "../handler/activity.ts";
 import { Activity } from "../type/app.ts";
-import { loginUserInCognito } from "./cognito.ts"; // ฟังก์ชันที่สร้างและล็อกอินผู้ใช้ผ่าน Cognito
+import { loginUserInCognito } from "./cognito_test.ts"; // ฟังก์ชันที่สร้างและล็อกอินผู้ใช้ผ่าน Cognito
 
 Deno.test("Activity routes", async (t) => {
   // สร้างผู้ใช้และรับ token ผ่าน Cognito
