@@ -1,6 +1,6 @@
 import { assertEquals, assertArrayIncludes } from "jsr:@std/assert";
 import { studentApp } from "../handler/student.ts";
-import { loginUserInCognito } from "./cognito_test.ts";
+import { loginUserInCognito } from "../lib/cognito.ts";
 
 // Mock ข้อมูลจำลอง
 interface Student {

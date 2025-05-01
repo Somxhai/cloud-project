@@ -2,11 +2,14 @@
 import { Hono } from 'hono';
 import { cognitoMiddleware } from './middleware.ts'; // Import the middleware
 import './type.ts'; // Import the extended types
+import {pool} from './database/db.ts'; // Import the database connection
 
 const app = new Hono();
 
 // Test route (no authentication needed)
 app.get('/', (c) => {
+  const client = pool.connect();
+  client.query('select 1');
   return c.text('Hello Hono!');
 });
 

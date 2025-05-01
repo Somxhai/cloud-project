@@ -1,6 +1,6 @@
 import { assertEquals, assertArrayIncludes } from "jsr:@std/assert";
 import { skillApp } from "../handler/skill.ts";
-import { loginUserInCognito } from "./cognito_test.ts";
+import { loginUserInCognito } from "../lib/cognito.ts";
 import { Skill } from "../type/app.ts";
 
 // Mock services

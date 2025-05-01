@@ -1,6 +1,6 @@
 import { assertEquals, assertArrayIncludes } from "jsr:@std/assert";
 import { professorApp } from "../handler/professor.ts";
-import { loginUserInCognito } from "./cognito_test.ts"; // ใช้เหมือนกับ activity test
+import { loginUserInCognito } from "../lib/cognito.ts"; // ใช้เหมือนกับ activity test
 import { getAllStudentByProfessor } from "../database/service/professor.ts";
 
 // mock database response (สามารถเปลี่ยนเป็น mock service ได้ตามความเหมาะสม)

@@ -1,7 +1,8 @@
 import AWS from "aws-sdk"; // Import the CommonJS module
+
 const { CognitoIdentityServiceProvider } = AWS; // Destructure the Cognito service
 
-const cognito = new CognitoIdentityServiceProvider();
+const cognito = new CognitoIdentityServiceProvider({region: "us-east-1"}); // กำหนด region ของ AWS Cognito
 
 // ใส่ค่า environment จริงจาก AWS Cognito
 const userPoolId = Deno.env.get("COGNITO_USER_POOL_ID")!;

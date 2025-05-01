@@ -8,7 +8,8 @@
     "aws-sdk": "npm:aws-sdk@^2.0.0"
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-env main.ts"
+    "start": "deno run --allow-net --allow-env main.ts",
+    "dev": "deno run --allow-net --env-file --allow-env --allow-write --allow-read main.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",
