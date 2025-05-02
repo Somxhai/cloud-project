@@ -29,7 +29,7 @@ export interface Activity {
   id: string;
   name?: string;
   description: string;
-  activity_type: string;
+  activity_type: ActivityType;
   event_date: string;
   created_at: string;
   updated_at: string;
@@ -44,8 +44,7 @@ export type StudentActivity = {
 
 // Skill
 export type SkillType = "soft" | "hard";
-
-export type Skill = {
+export interface Skill {
   id: UUIDTypes;
   name: string;
   skill_type: SkillType;
