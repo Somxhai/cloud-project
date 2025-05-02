@@ -18,9 +18,27 @@ cognitoApp.post("/create-user", async (c) => {
 });
 
 cognitoApp.post("/login", async (c) => {
-  const token = await tryCatchService(() => loginUserInCognito());
-  return c.json({ token });
+  try {
+    // รับค่า username และ password จาก body ของ request
+    const { username, password } = await c.req.json();
+    
+    // ตรวจสอบว่าได้ข้อมูลครบหรือไม่
+    if (!username || !password) {
+      return c.json({ error: "Username and password are required" }, 400);
+    }
+
+    // เรียกฟังก์ชัน loginUserInCognito และส่งค่าพารามิเตอร์
+    const token = await loginUserInCognito(username, password);
+    
+    // ส่ง token กลับไป
+    return c.json({ token });
+  } catch (error) {
+    // จัดการข้อผิดพลาดในกรณีที่เกิด error ในฟังก์ชัน login
+    console.error("Error during login:", error);
+    return c.json({ error: "Login failed" }, 500);
+  }
 });
+
 
 cognitoApp.get("/me", cognitoMiddleware, async (c) => {
     await Promise.resolve(); // ป้องกัน lint error ชั่วคราว

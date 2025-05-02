@@ -32,7 +32,12 @@ const _mockSkillService = {
 // Use the mockSkillService in place of skillService in your tests
 
 Deno.test("Skill routes", async (t) => {
-  const token = await loginUserInCognito();
+  // ข้อมูลที่ใช้สำหรับล็อกอิน
+  const username = "testuser";
+  const password = "TestPassword123!";
+
+  // สร้างผู้ใช้และรับ token ผ่าน Cognito
+  const token = await loginUserInCognito(username, password);
   if (!token) throw new Error("Login failed");
 
   await t.step("GET / - should return all skills", async () => {

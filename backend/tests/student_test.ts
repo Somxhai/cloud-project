@@ -38,8 +38,12 @@ interface StudentApp {
 (studentApp as unknown as StudentApp).studentService = mockStudentService;
 
 Deno.test("Student public routes", async (t) => {
-  const token = await loginUserInCognito();
-  if (!token) throw new Error("Login failed");
+  // ข้อมูลที่ใช้สำหรับล็อกอิน
+  const username = "testuser";
+  const password = "TestPassword123!";
+
+  // สร้างผู้ใช้และรับ token ผ่าน Cognito
+  const token = await loginUserInCognito(username, password);  if (!token) throw new Error("Login failed");
 
   const studentId = "stu1";
 

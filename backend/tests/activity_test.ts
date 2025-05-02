@@ -4,8 +4,12 @@ import { Activity } from "../type/app.ts";
 import { loginUserInCognito } from "../lib/cognito.ts"; // ฟังก์ชันที่สร้างและล็อกอินผู้ใช้ผ่าน Cognito
 
 Deno.test("Activity routes", async (t) => {
+  // ข้อมูลที่ใช้สำหรับล็อกอิน
+  const username = "testuser";
+  const password = "TestPassword123!";
+
   // สร้างผู้ใช้และรับ token ผ่าน Cognito
-  const token = await loginUserInCognito();
+  const token = await loginUserInCognito(username, password);
 
   if (!token) {
     throw new Error("Login failed");

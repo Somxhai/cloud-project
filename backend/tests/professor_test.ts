@@ -19,7 +19,12 @@ const originalGetAllStudentByProfessor = getAllStudentByProfessor;
 (globalThis as { getAllStudentByProfessor?: (_id: string) => Promise<typeof mockStudents> }).getAllStudentByProfessor = (_id: string) => Promise.resolve(mockStudents);
 
 Deno.test("Professor routes", async (t) => {
-  const token = await loginUserInCognito();
+  // ข้อมูลที่ใช้สำหรับล็อกอิน
+  const username = "testuser";
+  const password = "TestPassword123!";
+
+  // สร้างผู้ใช้และรับ token ผ่าน Cognito
+  const token = await loginUserInCognito(username, password);
 
   if (!token) throw new Error("Login failed");
 
