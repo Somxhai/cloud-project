@@ -1,9 +1,14 @@
 // backend/middleware.ts
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { Context } from 'hono';
+import "https://deno.land/std@0.224.0/dotenv/load.ts";
 
-const region = 'ap-southeast-1'; // <== ใส่ region ของ Cognito
-const userPoolId = 'ap-southeast-1_ABC123xyz'; // <== ใส่ Cognito User Pool ID จริง
+const region = Deno.env.get("COGNITO_REGION"); // <== ใส่ region ของ Cognito
+const userPoolId = Deno.env.get("COGNITO_USER_POOL_ID"); // <== ใส่ Cognito User Pool ID จริง
+
+if (!region || !userPoolId) {
+  throw new Error('Cognito region or user pool ID is missing');
+}
 
 const jwksUrl = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
 const JWKS = createRemoteJWKSet(new URL(jwksUrl));

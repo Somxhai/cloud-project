@@ -1,114 +1,130 @@
-import { assertEquals, assertArrayIncludes } from "jsr:@std/assert";
+import {
+  assertEquals,
+  assertArrayIncludes,
+  assertExists
+} from "jsr:@std/assert";
 import { activityApp } from "../handler/activity.ts";
 import { Activity } from "../type/app.ts";
-import { loginUserInCognito } from "../lib/cognito.ts"; // ฟังก์ชันที่สร้างและล็อกอินผู้ใช้ผ่าน Cognito
+import { loginUserInCognito } from "../lib/cognito.ts";
+import { UUIDTypes } from "uuid";
 
 Deno.test("Activity routes", async (t) => {
-  // ข้อมูลที่ใช้สำหรับล็อกอิน
   const username = "testuser";
   const password = "TestPassword123!";
-
-  // สร้างผู้ใช้และรับ token ผ่าน Cognito
   const token = await loginUserInCognito(username, password);
+  if (!token) throw new Error("Login failed");
 
-  if (!token) {
-    throw new Error("Login failed");
-  }
-
-  // ข้อมูลกิจกรรมใหม่ที่ใช้ในการทดสอบ
-  const newActivity: Activity = {
-    id: "123e4567-e89b-12d3-a456-426614174000",  // เปลี่ยน UUID ตามต้องการ
+  const newActivity: Partial<Activity> = {
     name: "Test Activity",
     description: "Test description",
-    activity_type: "academic", // กิจกรรมประเภท academic
-    event_date: new Date().toISOString().split('T')[0],  // วันที่ของกิจกรรม
+    activity_type: "academic",
+    event_date: new Date().toISOString().split("T")[0],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
-  let createdActivity: Activity;
+  let activityId: UUIDTypes;
 
+  // POST request to create an activity
   await t.step("POST / - create activity", async () => {
     const res = await activityApp.request("/", {
       method: "POST",
-      body: JSON.stringify(newActivity),
-      headers: {
-        Authorization: `Bearer ${token}`, // ใช้ token จากการล็อกอิน
-        "Content-Type": "application/json",
-      },
-    });
-
-    assertEquals(res.status, 200);
-    createdActivity = await res.json();
-    assertEquals(createdActivity.name, newActivity.name);
-  });
-
-  await t.step("GET / - fetch all activities", async () => {
-    const res = await activityApp.request("/", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`, // ใช้ token จากการล็อกอิน
-      },
-    });
-
-    assertEquals(res.status, 200);
-    const activities: Activity[] = await res.json();
-    // ตรวจสอบว่ากิจกรรมที่สร้างขึ้นมีในรายการ
-    assertArrayIncludes(activities.map(a => a.id), [createdActivity.id]);
-  });
-
-  await t.step("GET /:id - fetch single activity", async () => {
-    const res = await activityApp.request(`/${createdActivity.id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`, // ใช้ token จากการล็อกอิน
-      },
-    });
-
-    assertEquals(res.status, 200);
-    const fetched = await res.json();
-    assertEquals(fetched.id, createdActivity.id);
-  });
-
-  await t.step("PUT /:id - update activity", async () => {
-    const updatedActivity: Activity = { ...createdActivity, name: "Updated Test Activity" };
-
-    const res = await activityApp.request(`/${createdActivity.id}`, {
-      method: "PUT",
-      body: JSON.stringify(updatedActivity),
-      headers: {
-        Authorization: `Bearer ${token}`, // ใช้ token จากการล็อกอิน
-        "Content-Type": "application/json",
-      },
-    });
-
-    assertEquals(res.status, 200);
-    const updatedRes = await res.json();
-    assertEquals(updatedRes.name, "Updated Test Activity");
-  });
-
-  await t.step("DELETE /:id - delete activity", async () => {
-    const res = await activityApp.request(`/${createdActivity.id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`, // ใช้ token จากการล็อกอิน
-      },
-    });
-
-    assertEquals(res.status, 200);
-  });
-
-  await t.step("POST / - create activity with missing fields", async () => {
-    const incompleteActivity = { ...newActivity, name: undefined }; // ขาดข้อมูล name
-    const res = await activityApp.request("/", {
-      method: "POST",
-      body: JSON.stringify(incompleteActivity),
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      body: JSON.stringify(newActivity),
+    });
+
+    assertEquals(res.status, 200);
+    const created: Activity = await res.json();
+    console.log("Created Activity:", created); // Debugging line
+    if (!created.id) throw new Error("No ID returned from POST /");
+    activityId = created.id;
+  });
+
+  // GET request to fetch all activities
+  await t.step("GET / - fetch all activities", async () => {
+    const res = await activityApp.request("/", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    assertEquals(res.status, 200);
+    const activities: Activity[] = await res.json();
+    assertArrayIncludes(activities.map((a) => a.id), [activityId]);
+  });
+
+  await t.step("GET /:id - fetch single activity", async () => {
+    // Ensure that we are passing the correct `activityId` from the previous POST request.
+    const res = await activityApp.request(`/${activityId}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
     });
   
-    assertEquals(res.status, 400); // คาดว่า API ควรส่ง status 400
-  });  
+    // Check if the response status is 200 (successful).
+    assertEquals(res.status, 200);
+    
+    // Parse the response JSON as an Activity object.
+    const activity: Activity = await res.json();
+    
+    // Check that the returned activity's ID matches the ID we used in the URL.
+    assertEquals(activity.id, activityId);
+    
+    // Check that the returned activity has a name.
+    assertExists(activity.name);
+  });
+
+  await t.step("PUT /:id - update activity", async () => {
+    const updated: Activity = {
+      id: activityId,
+      name: "Updated Activity",
+      description: newActivity.description ?? "Default description",
+      activity_type: newActivity.activity_type ?? "art",
+      event_date: newActivity.event_date ?? new Date().toISOString().split("T")[0],
+      created_at: newActivity.created_at ?? new Date().toISOString(),
+      updated_at: new Date().toISOString(), // Usually updated_at should change
+    };
+  
+    const res = await activityApp.request(`/${activityId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updated),
+    });
+  
+    assertEquals(res.status, 200);
+  
+    const updatedRes: Activity = await res.json();
+    assertEquals(updatedRes.name, "Updated Activity");
+  });
+  
+  await t.step("DELETE /:id - delete activity", async () => {
+    const res = await activityApp.request(`/${activityId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  
+    assertEquals(res.status, 200);
+    const deleted: Activity = await res.json();
+    assertEquals(deleted.id, activityId);
+  });
+
+  await t.step("POST / - fail if missing required fields", async () => {
+    const invalid = { ...newActivity };
+    delete invalid.name;
+
+    const res = await activityApp.request("/", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(invalid),
+    });
+
+    assertEquals(res.status, 400);
+  });
 });

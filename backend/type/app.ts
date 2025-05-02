@@ -25,16 +25,15 @@ export type Professor = {
 // Activity
 export type ActivityType = "academic" | "volunteer" | "sports" | "art" | "other";
 
-export type Activity = {
-  id: UUIDTypes;
-  name: string;
-  description: string | null;
-  activity_type: ActivityType;
-  event_date: string; // format YYYY-MM-DD
+export interface Activity {
+  id: string;
+  name?: string;
+  description: string;
+  activity_type: string;
+  event_date: string;
   created_at: string;
   updated_at: string;
-};
-
+}
 // StudentActivity (join table)
 export type StudentActivity = {
   id: UUIDTypes;
