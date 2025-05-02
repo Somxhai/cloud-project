@@ -3,6 +3,11 @@ import { Hono } from 'hono';
 import { cognitoMiddleware } from './middleware.ts'; // Import the middleware
 import './type.ts'; // Import the extended types
 import {pool} from './database/db.ts'; // Import the database connection
+import { activityApp } from "./handler/activity.ts";
+import { professorApp } from "./handler/professor.ts";
+import { studentApp } from "./handler/student.ts";
+import { skillApp } from "./handler/skill.ts";
+import { cognitoApp } from "./handler/cognito.ts";
 
 const app = new Hono();
 
@@ -21,3 +26,9 @@ app.get('/protected', cognitoMiddleware, (c) => {
 
 // Start the server
 Deno.serve(app.fetch);
+
+app.route("/activity", activityApp);
+app.route("/skill", skillApp);
+app.route("/professor", professorApp);
+app.route("/student", studentApp);
+app.route("/cognito", cognitoApp);
