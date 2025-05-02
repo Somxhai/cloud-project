@@ -36,8 +36,10 @@ export const safeQuery = async <T>(
   fn: (client: PoolClient) => Promise<T>,
   errorMessage: string,
 ): Promise<T> => {
-  return await connect(fn).catch((e) => {
-    console.error(errorMessage, e);
-    throw new Error(errorMessage);
-  });
+  try {
+    return await connect(fn);
+  } catch (e) {
+    console.error(`${errorMessage}:`, e);
+    throw new Error(`${errorMessage}: ${e instanceof Error ? e.message : String(e)}`);
+  }
 };
