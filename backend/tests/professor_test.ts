@@ -1,12 +1,10 @@
 import {
   assertEquals,
-  assertArrayIncludes,
   assertExists,
 } from "jsr:@std/assert";
 import { professorApp } from "../handler/professor.ts";
 import { loginUserInCognito } from "../lib/cognito.ts";
 import { ProfessorStudent } from "../type/app.ts";
-import { UUIDTypes } from "uuid";
 
 Deno.test("Professor routes", async (t) => {
   const username = "testuser";
