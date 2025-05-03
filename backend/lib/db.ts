@@ -9,6 +9,7 @@ import {
   CREATE_SKILL_TABLE,
   CREATE_ACTIVITY_SKILL_TABLE,
   CREATE_PROFESSOR_STUDENT_TABLE,
+  CREATE_STUDENT_SKILL_TABLE,
 } from "../database/sql/app.ts"; // สมมติพวก CREATE TABLE อยู่ใน database/schema.ts
 
 
@@ -28,6 +29,7 @@ export const setupDatabase = async (client: PoolClient) => {
     await client.query(CREATE_SKILL_TABLE);
     await client.query(CREATE_ACTIVITY_SKILL_TABLE);
     await client.query(CREATE_PROFESSOR_STUDENT_TABLE);
+    await client.query(CREATE_STUDENT_SKILL_TABLE);
 
     console.log("Database tables initialized ✅");
   } catch (err) {

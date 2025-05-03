@@ -38,3 +38,19 @@ export const getAllStudent = async () => {
     "Failed to get all students"
   ).then((res) => res.rows);
 };
+
+// ฟังก์ชันนี้จะสร้างนักศึกษาใหม่
+export const createStudent = async (userId: UUIDTypes, faculty: string, major: string, year: number) => {
+  const query = `
+    INSERT INTO "student" (user_id, faculty, major, year)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *;  // Returns the newly created student
+  `;
+  
+  const values = [userId, faculty, major, year];
+  
+  return await safeQuery<{ rows: Student[] }>(
+    (client) => client.query(query, values),
+    "Failed to create student"
+  ).then((res) => res.rows[0]);  // Return the newly created student (first row of result)
+};

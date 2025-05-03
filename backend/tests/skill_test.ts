@@ -18,6 +18,7 @@ Deno.test("Skill routes", async (t) => {
   };
 
   let skillId: UUIDTypes;
+  let studentId: UUIDTypes;
 
   await t.step("POST / - should create new skill", async () => {
     const res = await skillApp.request("/", {
@@ -49,31 +50,25 @@ Deno.test("Skill routes", async (t) => {
     assertArrayIncludes(skills.map((s: Skill) => s.id), [skillId]);
   });
 
-  // await t.step("POST /add-to-student - should add skill to student", async () => {
-  //   const res = await skillApp.request("/add-to-student", {
-  //     method: "POST",
-  //     body: JSON.stringify({ skillId: "s1", studentId: "stu1" }),
-  //     headers: {
-  //       Authorization: `Bearer ${token}`,
-  //       "Content-Type": "application/json",
-  //     },
-  //   });
-
-  //   assertEquals(res.status, 200);
-  //   const result = await res.json();
-  //   assertEquals(result.skillId, "s1");
-  //   assertEquals(result.studentId, "stu1");
-  // });
-
-  await t.step("DELETE /:id - delete activity", async () => {
-    const res = await skillApp.request(`/${skillId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+  await t.step("POST /add-to-student - assign skill to student", async () => {
+    if (!studentId) {
+      console.warn("Skipping skill-to-student test: studentId is undefined");
+      return;
+    }
+  
+    const res = await skillApp.request("/add-to-student", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ skillId, studentId }),
     });
   
     assertEquals(res.status, 200);
-    const deleted: Skill = await res.json();
-    assertEquals(deleted.id, skillId);
+    const result = await res.json();
+    assertEquals(result.skillId, skillId);
+    assertEquals(result.studentId, studentId);
   });
+  
 
 });

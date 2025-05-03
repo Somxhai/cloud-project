@@ -77,3 +77,12 @@ CREATE TABLE IF NOT EXISTS "professor_student" (
   CONSTRAINT unique_professor_student UNIQUE (professor_id, student_id)
 );
 `;
+
+export const CREATE_STUDENT_SKILL_TABLE = `
+CREATE TABLE IF NOT EXISTS "student_skill" (
+  student_id UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  skill_id UUID NOT NULL REFERENCES skill(id) ON DELETE CASCADE,
+  PRIMARY KEY (student_id, skill_id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+`;

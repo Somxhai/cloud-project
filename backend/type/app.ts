@@ -65,3 +65,10 @@ export type ProfessorStudent = {
   professor_id: UUIDTypes;
   student_id: UUIDTypes;
 };
+
+// StudentSkill (join table)
+export type StudentSkill = {
+  student_id: UUIDTypes;
+  skill_id: UUIDTypes;
+  created_at: string;
+};
