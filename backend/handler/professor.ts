@@ -1,5 +1,8 @@
 import { Hono } from "hono";
-import { getAllStudentByProfessor } from "../database/service/professor.ts";
+import {
+  getAllStudentByProfessor,
+  getStudentsWithSkillsByProfessor,
+} from "../database/service/professor.ts";
 import { cognitoMiddleware } from "../middleware.ts"; // ใช้ cognitoMiddleware
 import { tryCatchService } from "../lib/utils.ts";
 
@@ -20,6 +23,16 @@ professorApp.get("/:professorId/students", async (c) => {
 });
 
 // Use cognitoMiddleware to protect routes
-professorApp.use(cognitoMiddleware);
+//professorApp.use(cognitoMiddleware);
 
-// You can add more protected routes below if needed
+
+professorApp.get("/:professorId/students/with-skills", async (c) => {
+  const professorId = c.req.param("professorId");
+  const result = await tryCatchService(() =>
+    getStudentsWithSkillsByProfessor(professorId)
+  );
+  if (!Array.isArray(result)) {
+    return c.json({ error: "Invalid data format" }, 500);
+  }
+  return c.json(result);
+});

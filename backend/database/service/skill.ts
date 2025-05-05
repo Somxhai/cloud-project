@@ -51,3 +51,28 @@ export const deleteSkill = async (skillId: UUIDTypes) => {
     "Failed to delete skill"
   ).then((res) => res.rows);
 };
+
+
+
+export const updateActivitySkills = async (activityId: UUIDTypes, skillIds: UUIDTypes[]) => {
+  return await safeQuery(async (client) => {
+    await client.query("BEGIN");
+
+    // ลบ skills เดิมก่อน
+    await client.query(
+      `DELETE FROM activity_skill WHERE activity_id = $1`,
+      [activityId]
+    );
+
+    // เพิ่ม skill ใหม่
+    for (const skillId of skillIds) {
+      await client.query(
+        `INSERT INTO activity_skill (activity_id, skill_id) VALUES ($1, $2)`,
+        [activityId, skillId]
+      );
+    }
+
+    await client.query("COMMIT");
+    return { success: true };
+  }, "Failed to update activity skills");
+};

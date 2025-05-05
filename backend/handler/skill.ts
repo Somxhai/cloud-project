@@ -22,7 +22,7 @@ skillApp.get("/", async (c) => {
 });
 
 // Use cognitoMiddleware to protect routes
-skillApp.use(cognitoMiddleware);
+//skillApp.use(cognitoMiddleware);
 
 // Protected route: Add skill to a student
 skillApp.post("/add-to-student", async (c) => {
@@ -64,3 +64,6 @@ skillApp.delete("/:skillId", async (c) => {
     return c.text("Internal server error", 500);  // Catch any errors and return 500
   }
 });
+
+
+

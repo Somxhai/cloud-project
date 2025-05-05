@@ -2,6 +2,8 @@ export const CREATE_STUDENT_TABLE = `
 CREATE TABLE IF NOT EXISTS "student" (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,
+  student_code TEXT NOT NULL UNIQUE, -- รหัสนักศึกษา
+  full_name TEXT NOT NULL,          -- ชื่อ-นามสกุลนักศึกษา
   faculty TEXT NOT NULL,
   major TEXT NOT NULL,
   year INT NOT NULL,
@@ -10,32 +12,41 @@ CREATE TABLE IF NOT EXISTS "student" (
 );
 `;
 
+
 export const CREATE_PROFESSOR_TABLE = `
 CREATE TABLE IF NOT EXISTS "professor" (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,
+  full_name TEXT NOT NULL,  -- ชื่อ-นามสกุลอาจารย์
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 `;
+
 
 export const CREATE_ACTIVITY_TABLE = `
 CREATE TABLE IF NOT EXISTS "activity" (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-  activity_type TEXT NOT NULL CHECK (activity_type IN ('academic', 'volunteer', 'sports', 'art', 'other')),
+
+  status INT NOT NULL CHECK (status IN (0, 1, 2)) DEFAULT 0,
+  amount INT NOT NULL DEFAULT 0,
+  max_amount INT NOT NULL,
+
   event_date DATE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 `;
 
+
 export const CREATE_STUDENT_ACTIVITY_TABLE = `
 CREATE TABLE IF NOT EXISTS "student_activity" (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id UUID NOT NULL,
   activity_id UUID NOT NULL,
+  status INT NOT NULL DEFAULT 0 CHECK (status IN (0, 1, 2, 3)),
   participated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT student_participation_student_fk FOREIGN KEY (student_id) REFERENCES "student"(id) ON DELETE CASCADE,
@@ -43,6 +54,7 @@ CREATE TABLE IF NOT EXISTS "student_activity" (
   CONSTRAINT unique_student_activity UNIQUE (student_id, activity_id)
 );
 `;
+
 
 export const CREATE_SKILL_TABLE = `
 CREATE TABLE IF NOT EXISTS "skill" (
@@ -82,7 +94,9 @@ export const CREATE_STUDENT_SKILL_TABLE = `
 CREATE TABLE IF NOT EXISTS "student_skill" (
   student_id UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
   skill_id UUID NOT NULL REFERENCES skill(id) ON DELETE CASCADE,
-  PRIMARY KEY (student_id, skill_id),
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  skill_level INT NOT NULL DEFAULT 1 CHECK (skill_level BETWEEN 1 AND 5),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (student_id, skill_id)
 );
 `;
+

@@ -8,6 +8,7 @@ import { professorApp } from "./handler/professor.ts";
 import { studentApp } from "./handler/student.ts";
 import { skillApp } from "./handler/skill.ts";
 import { cognitoApp } from "./handler/cognito.ts";
+import { cors } from 'hono/cors';
 
 const app = new Hono();
 
@@ -17,6 +18,10 @@ app.get('/', (c) => {
   client.query('select 1');
   return c.text('Hello Hono!');
 });
+
+app.use('*', cors({
+  origin: 'http://localhost:3000', // ระบุ origin ของ frontend
+}));
 
 // Protected route with Cognito authentication middleware
 app.get('/protected', cognitoMiddleware, (c) => {
