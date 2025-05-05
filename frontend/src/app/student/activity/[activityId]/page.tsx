@@ -2,92 +2,108 @@
 
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
-
-/* ------------------------------- mock data ------------------------------- */
-type Skill = { name: string; level: number };
-
-type Activity = {
-  id: string;
-  title: string;
-  description: string;
-  picture: string;
-  status: 'เปิดรับ' | 'ปิดรับ';
-  current: number;
-  max: number;
-  datetime: string;
-  skills: Skill[];
-};
-
-const mockActivity: Activity = {
-  id: 'act1',
-  title: 'อบรม Python for Data Science',
-  description:
-    'กิจกรรมเชิงปฏิบัติการเพื่อศึกษา Python สำหรับการวิเคราะห์ข้อมูลและการสร้างโมเดลเบื้องต้น',
-  picture: '/placeholder.svg',
-  status: 'เปิดรับ',
-  current: 142,
-  max: 160,
-  datetime: '30 เมษายน 2568 - 14:30',
-  skills: [
-    { name: 'Python', level: 2 },
-    { name: 'Communication', level: 1 },
-  ],
-};
-/* ------------------------------------------------------------------------ */
-
-const SkillBadge = ({ s }: { s: Skill }) => (
-  <span className="rounded bg-gray-200 px-1.5 text-[11px] font-medium text-gray-700">
-    {s.name} : {s.level}
-  </span>
-);
+import { useEffect, useState } from 'react';
+import { getActivityDetail } from '@/lib/activity';
+import { joinActivity, getStudentActivityStatus } from '@/lib/student';
+import type { ActivityWithSkills } from '@/types/models';
+import { formatDateThai } from '@/lib/utils/date';
 
 export default function ActivityDetailPage() {
   const router = useRouter();
-  const { activityId } = useParams(); // ใช้ดึงข้อมูลจริงภายหลัง
-  const a = mockActivity;
+  const { activityId } = useParams();
+  const [activity, setActivity] = useState<ActivityWithSkills | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [studentId] = useState('ef356e59-bfee-41d2-9d08-800ac5b5b835'); // TODO: ดึงจาก auth จริง
+  const [joinStatus, setJoinStatus] = useState<0 | 1 | 2 | 3 | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+
+  // โหลดรายละเอียดกิจกรรม
+  useEffect(() => {
+    if (!activityId || typeof activityId !== 'string') return;
+
+    const fetchActivity = async () => {
+      try {
+        const data = await getActivityDetail(activityId);
+        setActivity(data);
+      } catch (err: any) {
+        setError(err.message || 'เกิดข้อผิดพลาด');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivity();
+  }, [activityId]);
+
+  // โหลดสถานะการเข้าร่วม
+  useEffect(() => {
+    if (!activityId || typeof activityId !== 'string') return;
+
+    const fetchStatus = async () => {
+      try {
+        const result = await getStudentActivityStatus(studentId, activityId);
+        if (result) setJoinStatus(result.status);
+      } catch (err) {
+        console.error('Failed to load join status:', err);
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+
+    fetchStatus();
+  }, [activityId]);
+
+  // ⏳ กำลังโหลดกิจกรรม
+  if (loading) return <div className="p-6 text-center">กำลังโหลดข้อมูลกิจกรรม...</div>;
+  if (error) return <div className="p-6 text-center text-red-600">⚠ {error}</div>;
+  if (!activity) return null;
+
+  const a = activity;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="rounded-2xl border p-8 shadow-sm">
-        {/* header */}
-        <h1 className="text-2xl font-bold">{a.title}</h1>
-        <h2 className="mt-2 text-base font-semibold">รายละเอียดกิจกรรม</h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          {/* left column: text */}
-          <p className="text-sm leading-6 text-gray-700">{a.description}</p>
+      <div className="rounded-2xl border p-8 shadow-sm bg-white">
+        <h1 className="text-2xl font-bold">{a.name}</h1>
+        <h2 className="mt-1 text-base font-semibold">รายละเอียดกิจกรรม</h2>
 
-          {/* right column: image */}
-          <div className="relative h-52 w-full rounded-lg bg-gray-100">
+        <div className="mt-6 flex flex-col md:flex-row md:items-start md:gap-6">
+          <div className="flex-1">
+            <p className="text-sm leading-6 text-gray-700">{a.description}</p>
+          </div>
+          <div className="relative h-52 w-full max-w-sm rounded-2xl bg-gray-100 md:h-40 md:w-80">
             <Image
-              src={a.picture}
-              alt={a.title}
+              src="/data-science-and-visualization-with-python.jpg"
+              alt={a.name}
               fill
-              className="object-cover rounded-lg"
+              className="object-cover rounded-2xl"
             />
           </div>
         </div>
 
-        {/* info & skills */}
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          {/* info box */}
-          <div className="rounded-lg bg-gray-100 p-6 text-sm">
+        <div className="mt-8 flex flex-col gap-6 md:flex-row">
+          <div className="flex-1 rounded-lg bg-gray-100 p-6 text-sm space-y-2">
             <p>
               สถานะ:{' '}
-              <span className="font-bold text-green-700">{a.status}</span>
+              <span className="font-bold text-green-700">
+                {a.status === 0 ? 'เปิดรับ' : 'ปิด'}
+              </span>
             </p>
             <p>
-              ผู้เข้าร่วม: {a.current}/{a.max}
+              จำนวนผู้เข้าร่วม: {a.amount} / {a.max_amount}
             </p>
-            <p>วัน-เวลาจัด {a.datetime}</p>
+            <p>วัน-เวลาจัด: {formatDateThai(a.event_date)}</p>
           </div>
 
-          {/* skills */}
-          <div className="rounded-lg bg-gray-100 p-6 text-sm">
-            <p className="font-semibold">ทักษะที่ได้</p>
-            <ul className="mt-2 flex flex-wrap gap-1">
-              {a.skills.map(s => (
-                <li key={s.name}>
-                  <SkillBadge s={s} />
+          <div className="flex-1 rounded-lg bg-gray-100 p-6 text-sm">
+            <p className="font-semibold mb-2">ทักษะที่ได้</p>
+            <ul className="flex flex-wrap gap-2">
+              {a.skills.map((skill, i) => (
+                <li
+                  key={i}
+                  className="rounded bg-slate-200 px-3 py-0.5 text-xs font-medium text-slate-700"
+                >
+                  {skill}
                 </li>
               ))}
             </ul>
@@ -95,18 +111,52 @@ export default function ActivityDetailPage() {
         </div>
       </div>
 
-      {/* action buttons */}
-      <div className="mt-6 flex justify-end gap-4">
-        <button
-          onClick={() => router.back()}
-          className="rounded-full bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300"
-        >
-          ย้อนกลับ
-        </button>
-        <button className="rounded-full bg-red-500/90 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600">
-          ลงทะเบียนเข้าร่วมกิจกรรม
-        </button>
-      </div>
+      {/* ✅ เงื่อนไขแสดงปุ่มหรือสถานะลงทะเบียน */}
+      {a.status === 0 && (
+        <div className="mt-6 flex justify-end gap-4">
+          <button
+            onClick={() => router.back()}
+            className="rounded-full bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+          >
+            ย้อนกลับ
+          </button>
+
+          {statusLoading ? (
+            <span className="text-sm text-gray-500 px-6 py-2">โปรดรอสักครู่...</span>
+          ) : joinStatus === 0 ? (
+            <span className="rounded-full bg-yellow-100 px-6 py-2 text-sm font-medium text-yellow-700">
+              รอยืนยันการลงทะเบียน
+            </span>
+          ) : joinStatus === 1 ? (
+            <span className="rounded-full bg-green-100 px-6 py-2 text-sm font-medium text-green-700">
+              คุณได้ลงทะเบียนแล้ว
+            </span>
+          ) : joinStatus === 2 ? (
+            <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700">
+              การลงทะเบียนไม่ผ่านการอนุมัติ
+            </span>
+          ) : joinStatus === 3 ? (
+            <span className="rounded-full bg-gray-200 px-6 py-2 text-sm font-medium text-gray-600">
+              คุณเข้าร่วมกิจกรรมนี้แล้ว
+            </span>
+          ) : (
+            <button
+              onClick={async () => {
+                try {
+                  await joinActivity(studentId, activityId as string);
+                  alert('ลงทะเบียนเรียบร้อยแล้ว');
+                  setJoinStatus(0);
+                } catch (err: any) {
+                  alert(err.message || 'ลงทะเบียนไม่สำเร็จ');
+                }
+              }}
+              className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600"
+            >
+              ลงทะเบียนเข้าร่วมกิจกรรม
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
