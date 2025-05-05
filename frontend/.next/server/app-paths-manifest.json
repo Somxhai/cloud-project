@@ -1,6 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/professor/dashboard/page": "app/professor/dashboard/page.js",
   "/staff/activities/[activityId]/page": "app/staff/activities/[activityId]/page.js",
   "/staff/activities/page": "app/staff/activities/page.js",
   "/staff/activity/edit/[activityId]/page": "app/staff/activity/edit/[activityId]/page.js",
