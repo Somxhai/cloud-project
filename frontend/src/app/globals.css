@@ -31,3 +31,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans); /* เปลี่ยนเป็นใช้ตัวแปร */
 }
+button{
+  cursor: pointer;
+}

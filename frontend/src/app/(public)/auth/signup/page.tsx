@@ -61,53 +61,98 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="p-6 max-w-md mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">สมัครสมาชิก</h1>
-
-      <select
-        className="border p-2 w-full"
-        value={role}
-        onChange={(e) => setRole(e.target.value as any)}
-      >
-        <option value="student">Student</option>
-        <option value="professor">Professor</option>
-        <option value="staff">Staff</option>
-      </select>
-
-      <input placeholder="Username" className="border p-2 w-full" onChange={e => setUsername(e.target.value)} />
-      <input placeholder="Email" className="border p-2 w-full" onChange={e => setEmail(e.target.value)} />
-      <input type="password" placeholder="Password" className="border p-2 w-full" onChange={e => setPassword(e.target.value)} />
-
-      {role === 'student' && (
-        <div className="space-y-2">
-          <input placeholder="ชื่อ-นามสกุล" className="border p-2 w-full" onChange={e => setFullName(e.target.value)} />
-          <input placeholder="รหัสนักศึกษา" className="border p-2 w-full" onChange={e => setStudentCode(e.target.value)} />
-          <input placeholder="คณะ" className="border p-2 w-full" onChange={e => setFaculty(e.target.value)} />
-          <input placeholder="สาขา" className="border p-2 w-full" onChange={e => setMajor(e.target.value)} />
-          <input type="number" placeholder="ชั้นปี" className="border p-2 w-full" onChange={e => setYear(Number(e.target.value))} />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-md space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold">สมัครสมาชิก</h1>
+          <p className="text-sm text-gray-500">กรุณากรอกข้อมูลให้ครบถ้วน</p>
         </div>
-      )}
 
-      {role === 'professor' && (
-        <input placeholder="ชื่อ-นามสกุลอาจารย์" className="border p-2 w-full" onChange={e => setProfessorName(e.target.value)} />
-      )}
+        <select
+          className="border rounded px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={role}
+          onChange={(e) => setRole(e.target.value as any)}
+        >
+          <option value="student">Student</option>
+          <option value="professor">Professor</option>
+          <option value="staff">Staff</option>
+        </select>
 
-<button
-  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 w-full transition-colors cursor-pointer"
-  onClick={handleSignUp}
->
-  สมัครสมาชิก
-</button>
+        <div className="space-y-3">
+          <input
+            placeholder="Username"
+            className="border rounded px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onChange={e => setUsername(e.target.value)}
+          />
+          <input
+            placeholder="Email"
+            className="border rounded px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onChange={e => setEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="border rounded px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onChange={e => setPassword(e.target.value)}
+          />
+        </div>
 
-<Link href="/auth/confirm" className="block text-center text-sm text-blue-600 hover:underline">
-  ไปหน้ายืนยันอีเมล
-</Link>
+        {role === 'student' && (
+          <div className="space-y-3 pt-2">
+            <input
+              placeholder="ชื่อ-นามสกุล"
+              className="border rounded px-3 py-2 w-full text-sm"
+              onChange={e => setFullName(e.target.value)}
+            />
+            <input
+              placeholder="รหัสนักศึกษา"
+              className="border rounded px-3 py-2 w-full text-sm"
+              onChange={e => setStudentCode(e.target.value)}
+            />
+            <input
+              placeholder="คณะ"
+              className="border rounded px-3 py-2 w-full text-sm"
+              onChange={e => setFaculty(e.target.value)}
+            />
+            <input
+              placeholder="สาขา"
+              className="border rounded px-3 py-2 w-full text-sm"
+              onChange={e => setMajor(e.target.value)}
+            />
+            <input
+              type="number"
+              placeholder="ชั้นปี"
+              className="border rounded px-3 py-2 w-full text-sm"
+              onChange={e => setYear(Number(e.target.value))}
+            />
+          </div>
+        )}
 
-<Link href="/auth/signin" className="block text-center text-sm text-gray-600 hover:underline">
-  มีบัญชีอยู่แล้ว? เข้าสู่ระบบที่นี่
-</Link>
+        {role === 'professor' && (
+          <input
+            placeholder="ชื่อ-นามสกุลอาจารย์"
+            className="border rounded px-3 py-2 w-full text-sm"
+            onChange={e => setProfessorName(e.target.value)}
+          />
+        )}
 
-      
+        <button
+          onClick={handleSignUp}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded w-full transition cursor-pointer"
+        >
+          สมัครสมาชิก
+        </button>
+
+        <div className="text-center space-y-1">
+          <Link href="/auth/confirm" className="text-sm text-blue-600 hover:underline">
+            ไปหน้ายืนยันอีเมล
+          </Link>
+          <br />
+          <Link href="/auth/signin" className="text-sm text-gray-600 hover:underline">
+            มีบัญชีอยู่แล้ว? เข้าสู่ระบบที่นี่
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

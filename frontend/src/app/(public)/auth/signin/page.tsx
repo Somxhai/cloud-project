@@ -30,44 +30,56 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-md space-y-5">
-        <h1 className="text-2xl font-semibold text-center">เข้าสู่ระบบ</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-md space-y-6">
+        {/* Title / Logo */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-800">เข้าสู่ระบบ</h1>
+          <p className="text-sm text-gray-500 mt-1">กรอกข้อมูลเพื่อเข้าสู่ระบบ</p>
+        </div>
 
+        {/* Error */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-sm">
+          <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-2 rounded text-sm">
             {error}
           </div>
         )}
 
-        <div className="space-y-3">
+        {/* Input Fields */}
+        <div className="space-y-4">
           <input
             placeholder="Username"
             value={username}
-            onChange={e => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <input
             type="password"
             placeholder="Password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="border rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
+        {/* Submit Button */}
         <button
-          className="bg-blue-600 text-white font-medium px-4 py-2 rounded w-full disabled:opacity-60 hover:cursor-pointer" 
           onClick={handleSignIn}
           disabled={loading}
+          className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60 cursor-pointer"
         >
           {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
         </button>
-        <Link href="/auth/signup" className="block text-center text-sm text-gray-600 hover:underline">
-        ยังไม่มีบัญชี? สมัครสมาชิก
-      </Link>
+
+        {/* Link to SignUp */}
+        <div className="text-center text-sm text-gray-600">
+          ยังไม่มีบัญชี?{' '}
+          <Link href="/auth/signup" className="text-blue-600 hover:underline font-medium">
+            สมัครสมาชิก
+          </Link>
+        </div>
       </div>
     </div>
   );
