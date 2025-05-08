@@ -5,22 +5,38 @@ import Link from 'next/link';
 import { getAllActivitiesWithSkills } from '@/lib/activity';
 import { ActivityWithSkills } from '@/types/models';
 import { formatDateThai } from '@/lib/utils/date';
-
+import { fetchAuthSession } from '@aws-amplify/auth'; // เพิ่ม
+import '@/lib/amplifyConfig';
 
 export default function StaffActivitiesPage() {
   const [activityList, setActivityList] = useState<ActivityWithSkills[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true); // ✅ เพิ่มสถานะ loading
+  const [unauthorized, setUnauthorized] = useState(false); // ✅ เพิ่ม state นี้
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
+        const session = await fetchAuthSession();
+        const rawGroups = session.tokens?.idToken?.payload['cognito:groups'];
+        const groups = Array.isArray(rawGroups)
+          ? rawGroups
+          : typeof rawGroups === 'string'
+          ? [rawGroups]
+          : [];
+
+        if (!groups.includes('staff')) {
+          setUnauthorized(true);
+          return;
+        }
+
         const data = await getAllActivitiesWithSkills();
         setActivityList(data);
       } catch (err) {
         console.error('Failed to load activities:', err);
+        setUnauthorized(true); // fallback เผื่อ token invalid
       } finally {
-        setLoading(false); // ✅ ตั้ง loading เป็น false หลังโหลดเสร็จ
+        setLoading(false);
       }
     };
 
@@ -30,8 +46,15 @@ export default function StaffActivitiesPage() {
   const filtered = activityList.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
   );
-
+  if (unauthorized) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        คุณไม่มีสิทธิ์เข้าถึงหน้านี้
+      </div>
+    );
+  }
   return (
+    
     <div className="min-h-screen px-6 py-10 sm:px-16 bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">หน้าจัดการกิจกรรม</h1>

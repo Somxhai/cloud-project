@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import {
   getAllStudentByProfessor,
   getStudentsWithSkillsByProfessor,
+  createProfessorByCognito,
 } from "../database/service/professor.ts";
 import { cognitoMiddleware } from "../middleware.ts"; // ใช้ cognitoMiddleware
 import { tryCatchService } from "../lib/utils.ts";
@@ -34,5 +35,13 @@ professorApp.get("/:professorId/students/with-skills", async (c) => {
   if (!Array.isArray(result)) {
     return c.json({ error: "Invalid data format" }, 500);
   }
+  return c.json(result);
+});
+
+
+
+professorApp.post("/", async (c) => {
+  const body = await c.req.json();
+  const result = await tryCatchService(() => createProfessorByCognito(body));
   return c.json(result);
 });

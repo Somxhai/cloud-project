@@ -4,6 +4,21 @@ import {
   StudentActivityWithStudentInfo,
 } from '@/types/models';
 
+import { fetchAuthSession } from '@aws-amplify/auth';
+
+async function getAuthHeaders() {
+  const session = await fetchAuthSession();
+  const idToken = session.tokens?.idToken?.toString();
+  if (!idToken) throw new Error('ไม่พบ token');
+  return {
+    Authorization: `Bearer ${idToken}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+
+
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 /**
@@ -102,7 +117,11 @@ export async function deleteActivity(id: string): Promise<Activity> {
  * ดึงกิจกรรมพร้อมรายชื่อ skills ที่เกี่ยวข้อง
  */
 export async function getActivityDetail(id: string): Promise<ActivityWithSkills> {
-  const res = await fetch(`${BASE_URL}/activity/detail/${id}`, { cache: 'no-store' });
+  const res = await fetch(`${BASE_URL}/activity/detail/${id}`, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: await getAuthHeaders(), // ✅ แนบ JWT Token ที่นี่
+  });
 
   if (!res.ok) throw new Error('ไม่พบกิจกรรมพร้อมรายละเอียด');
   return res.json();
@@ -113,7 +132,11 @@ export async function getActivityDetail(id: string): Promise<ActivityWithSkills>
  * ดึงกิจกรรมที่เปิดรับ (status = 0) + skills
  */
 export async function getOpenActivities(): Promise<ActivityWithSkills[]> {
-  const res = await fetch(`${BASE_URL}/activity/open`, { cache: 'no-store' });
+  const res = await fetch(`${BASE_URL}/activity/open`, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: await getAuthHeaders(), // ✅ เพิ่มตรงนี้
+  });
 
   if (!res.ok) throw new Error('ไม่พบกิจกรรมที่เปิดรับ');
   return res.json();
@@ -124,7 +147,11 @@ export async function getOpenActivities(): Promise<ActivityWithSkills[]> {
  * ดึงกิจกรรมทั้งหมดพร้อม skills
  */
 export async function getAllActivitiesWithSkills(): Promise<ActivityWithSkills[]> {
-  const res = await fetch(`${BASE_URL}/activity/with-skills`, { cache: 'no-store' });
+  const res = await fetch(`${BASE_URL}/activity/with-skills`, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: await getAuthHeaders(), // ✅ แนบ token ที่นี่
+  });
 
   if (!res.ok) throw new Error('ไม่พบข้อมูลกิจกรรมพร้อม skills');
   return res.json();

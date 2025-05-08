@@ -7,6 +7,7 @@ import { getActivityDetail } from '@/lib/activity';
 import { joinActivity, getStudentActivityStatus } from '@/lib/student';
 import type { ActivityWithSkills } from '@/types/models';
 import { formatDateThai } from '@/lib/utils/date';
+import { fetchAuthSession } from '@aws-amplify/auth';
 
 export default function ActivityDetailPage() {
   const router = useRouter();
@@ -14,9 +15,27 @@ export default function ActivityDetailPage() {
   const [activity, setActivity] = useState<ActivityWithSkills | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [studentId] = useState('ef356e59-bfee-41d2-9d08-800ac5b5b835'); // TODO: ดึงจาก auth จริง
+   // TODO: ดึงจาก auth จริง
   const [joinStatus, setJoinStatus] = useState<0 | 1 | 2 | 3 | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
+
+
+
+  const [studentId, setStudentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const session = await fetchAuthSession();
+      const sub = session.tokens?.idToken?.payload.sub;
+      console.log('🔑 sub:', sub);
+  
+      if (typeof sub === 'string') {
+        setStudentId(sub); // ✅ เก็บลง state
+      }
+    };
+    load();
+  }, []);
+  
 
   // โหลดรายละเอียดกิจกรรม
   useEffect(() => {
@@ -39,7 +58,8 @@ export default function ActivityDetailPage() {
   // โหลดสถานะการเข้าร่วม
   useEffect(() => {
     if (!activityId || typeof activityId !== 'string') return;
-
+    if (!studentId || typeof studentId !== 'string') return;
+  
     const fetchStatus = async () => {
       try {
         const result = await getStudentActivityStatus(studentId, activityId);
@@ -50,9 +70,10 @@ export default function ActivityDetailPage() {
         setStatusLoading(false);
       }
     };
-
+  
     fetchStatus();
-  }, [activityId]);
+  }, [activityId, studentId]); // ✅ ใส่ studentId ด้วย
+  
 
   // ⏳ กำลังโหลดกิจกรรม
   if (loading) return <div className="p-6 text-center">กำลังโหลดข้อมูลกิจกรรม...</div>;
@@ -143,7 +164,11 @@ export default function ActivityDetailPage() {
             <button
               onClick={async () => {
                 try {
-                  await joinActivity(studentId, activityId as string);
+                  if (!studentId || typeof studentId !== 'string') {
+                    console.warn('❌ ไม่พบ studentId ที่ใช้ได้');
+                    return;
+                  }
+                  await joinActivity(studentId!, activityId as string);
                   alert('ลงทะเบียนเรียบร้อยแล้ว');
                   setJoinStatus(0);
                 } catch (err: any) {

@@ -54,6 +54,7 @@
     --color-white: #fff;
     --spacing: .25rem;
     --container-sm: 24rem;
+    --container-md: 28rem;
     --container-lg: 32rem;
     --container-6xl: 72rem;
     --text-xs: .75rem;
@@ -470,6 +471,10 @@
     max-width: var(--container-lg);
   }
 
+  .max-w-md {
+    max-width: var(--container-md);
+  }
+
   .max-w-sm {
     max-width: var(--container-sm);
   }
@@ -720,6 +725,14 @@
     }
   }
 
+  .bg-blue-500 {
+    background-color: #3f83f8;
+  }
+
+  .bg-blue-600 {
+    background-color: #1c64f2;
+  }
+
   .bg-foreground {
     background-color: var(--foreground);
   }
@@ -746,6 +759,10 @@
 
   .bg-green-100 {
     background-color: #def7ec;
+  }
+
+  .bg-green-600 {
+    background-color: #057a55;
   }
 
   .bg-primary-700 {

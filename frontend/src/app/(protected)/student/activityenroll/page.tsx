@@ -3,27 +3,50 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { fetchAuthSession } from '@aws-amplify/auth';
 import { getOpenActivities } from '@/lib/activity';
 import type { ActivityWithSkills } from '@/types/models';
 import { formatDateThai } from '@/lib/utils/date';
+import '@/lib/amplifyConfig';
 
 export default function ActivityEnrollPage() {
+  const router = useRouter();
+
   const [activities, setActivities] = useState<ActivityWithSkills[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchActivities = async () => {
+    const verifyAccess = async () => {
       try {
+        const session = await fetchAuthSession();
+        const rawGroups = session.tokens?.idToken?.payload['cognito:groups'];
+        console.log("👀 Token Payload:", session.tokens?.idToken?.payload);
+        const groups = Array.isArray(rawGroups)
+          ? rawGroups
+          : typeof rawGroups === 'string'
+          ? [rawGroups]
+          : [];
+
+        if (!groups.includes('student')) {
+          setUnauthorized(true);
+          return;
+        }
+
         const res = await getOpenActivities();
         setActivities(res);
       } catch (err: any) {
+        console.error('Auth or data fetch error:', err);
         setError(err.message || 'เกิดข้อผิดพลาดในการโหลดกิจกรรม');
+        setUnauthorized(true);
       } finally {
         setLoading(false);
       }
     };
-    fetchActivities();
+
+    verifyAccess();
   }, []);
 
   const SkillBadge = ({ name }: { name: string }) => (
@@ -33,6 +56,7 @@ export default function ActivityEnrollPage() {
   );
 
   if (loading) return <p className="p-4">กำลังโหลดกิจกรรม...</p>;
+  if (unauthorized) return <p className="p-4 text-red-600">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>;
   if (error) return <p className="p-4 text-red-600">⚠ {error}</p>;
 
   return (

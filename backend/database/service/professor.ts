@@ -1,6 +1,6 @@
 import { UUIDTypes } from "uuid";
 import { safeQuery } from "../../lib/utils.ts";
-import { ProfessorStudent,StudentWithSkills } from "../../type/app.ts";
+import { ProfessorStudent,StudentWithSkills, Professor } from "../../type/app.ts";
 
 // ฟังก์ชันนี้จะได้รายชื่อนักศึกษาที่อยู่ภายใต้การดูแลของอาจารย์
 export const getAllStudentByProfessor = async (professorId: UUIDTypes) => {
@@ -72,3 +72,23 @@ export const getStudentsWithSkillsByProfessor = async (
   return Array.from(map.values());
 };
 
+
+
+
+export const createProfessorByCognito = async (professor: {
+  id: UUIDTypes;
+  user_id: UUIDTypes;
+  full_name: string;
+}) => {
+  const query = `
+    INSERT INTO professor (id, user_id, full_name)
+    VALUES ($1, $2, $3)
+    RETURNING *;
+  `;
+  const values = [professor.id, professor.user_id, professor.full_name];
+
+  return await safeQuery<{ rows: Professor[] }>(
+    (client) => client.query(query, values),
+    "Failed to create professor"
+  ).then((res) => res.rows[0]);
+};

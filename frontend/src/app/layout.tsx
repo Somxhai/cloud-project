@@ -1,6 +1,10 @@
 import './globals.css';
 import { Noto_Sans_Thai } from 'next/font/google';
 import MainNavbar from '@/components/Navbar';   // ← ใช้ไฟล์ที่คุณเพิ่งสร้าง
+import { fetchAuthSession } from '@aws-amplify/auth';
+import { redirect } from 'next/navigation';
+import '@/lib/amplifyConfig';
+
 
 /* ---------- โหลดฟอนต์ Google ---------- */
 const notoThai = Noto_Sans_Thai({

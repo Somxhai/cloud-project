@@ -36,7 +36,7 @@ activityApp.get("/", async (c) => {
 
 
 // Apply Cognito auth to protected routes
-//activityApp.use(cognitoMiddleware);
+activityApp.use(cognitoMiddleware);
 
 // Create activity
 activityApp.post("/", async (c) => {

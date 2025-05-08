@@ -232,3 +232,36 @@ export const updateStudentActivityStatus = async (
     "Failed to update student activity status"
   ).then((res) => res.rows[0]);
 };
+
+
+
+
+export const createStudentByCognito = async (student: {
+  id: UUIDTypes;
+  user_id: UUIDTypes;
+  student_code: string;
+  full_name: string;
+  faculty: string;
+  major: string;
+  year: number;
+}) => {
+  const query = `
+    INSERT INTO student (id, user_id, student_code, full_name, faculty, major, year)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *;
+  `;
+  const values = [
+    student.id,
+    student.user_id,
+    student.student_code,
+    student.full_name,
+    student.faculty,
+    student.major,
+    student.year,
+  ];
+
+  return await safeQuery<{ rows: Student[] }>(
+    (client) => client.query(query, values),
+    "Failed to create student"
+  ).then((res) => res.rows[0]);
+};

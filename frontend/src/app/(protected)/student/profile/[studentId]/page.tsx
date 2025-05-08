@@ -1,41 +1,65 @@
-"use client";
+'use client';
 
+import '@/lib/amplifyConfig';
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import { fetchAuthSession, getCurrentUser } from '@aws-amplify/auth';
 import { getStudentFullDetail, getCompletedActivitiesWithSkills } from "@/lib/student";
-import { useParams } from "next/navigation";
 import { formatDateThai } from '@/lib/utils/date';
+
 
 const ITEMS_PER_PAGE = 3;
 
 export default function MyProfile() {
   const { studentId } = useParams();
-  const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
 
+  const [currentPage, setCurrentPage] = useState(1);
   const [student, setStudent] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
 
   useEffect(() => {
-    if (!studentId || typeof studentId !== "string") return;
-
-    const fetchData = async () => {
+    const verifyAccessAndFetch = async () => {
       try {
+        await getCurrentUser();
+        const session = await fetchAuthSession();
+        const rawGroups = session.tokens?.idToken?.payload['cognito:groups'];
+        console.log("👀 Token Payload:", session.tokens?.idToken?.payload);
+        const groups = Array.isArray(rawGroups)
+          ? rawGroups
+          : typeof rawGroups === 'string'
+            ? [rawGroups]
+            : [];
+        
+        if (!groups.includes('student') && !groups.includes('professor')) {
+          setUnauthorized(true);
+          return;
+        }
+        
+
+        if (!studentId || typeof studentId !== "string") return;
+
         const stu = await getStudentFullDetail(studentId);
         const acts = await getCompletedActivitiesWithSkills(studentId);
         setStudent(stu);
         setActivities(acts);
       } catch (err) {
-        console.error("Failed to fetch profile data", err);
+        console.error("Auth error or fetch failed:", err);
+        setUnauthorized(true);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    verifyAccessAndFetch();
   }, [studentId]);
 
-  if (loading || !student) return <p className="p-6">กำลังโหลดข้อมูล...</p>;
+  if (loading) return <p className="p-6">กำลังโหลดข้อมูล...</p>;
+  if (unauthorized) return <p className="p-6 text-red-600">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>;
+  if (!student) return null;
 
   const totalPages = Math.ceil(activities.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;

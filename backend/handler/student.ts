@@ -4,7 +4,8 @@ import {
   getStudentSkills,
   getAllStudent,
   getStudentActivityStatus,
-  updateStudentActivityStatus
+  updateStudentActivityStatus,
+  createStudentByCognito,
 } from "../database/service/student.ts";
 import { cognitoMiddleware } from "../middleware.ts"; // ใช้ cognitoMiddleware
 import { tryCatchService } from "../lib/utils.ts";
@@ -91,5 +92,12 @@ studentApp.put("/update-status", async (c) => {
     updateStudentActivityStatus(activity_id, student_id, status)
   );
 
+  return c.json(result);
+});
+
+
+studentApp.post("/", async (c) => {
+  const body = await c.req.json();
+  const result = await tryCatchService(() => createStudentByCognito(body));
   return c.json(result);
 });
