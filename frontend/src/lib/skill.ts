@@ -1,14 +1,28 @@
 // lib/api/skill.ts
 import type { Skill } from "@/types/models";
+import { fetchAuthSession } from "@aws-amplify/auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
+async function getAuthHeaders() {
+  const session = await fetchAuthSession();
+  const idToken = session.tokens?.idToken?.toString();
+  if (!idToken) throw new Error("ไม่พบ token");
+  return {
+    Authorization: `Bearer ${idToken}`,
+    "Content-Type": "application/json",
+  };
+}
 
 /**
  * GET /skills
  * ดึงทักษะทั้งหมด
  */
 export async function getAllSkills(): Promise<Skill[]> {
-  const res = await fetch(`${BASE_URL}/skill`, { cache: "no-store" });
+  const res = await fetch(`${BASE_URL}/skill`, {
+    cache: "no-store",
+    headers: await getAuthHeaders(), // ✅ แนบ token
+  });
   if (!res.ok) throw new Error("ไม่สามารถโหลดรายการทักษะได้");
   return res.json();
 }
@@ -20,7 +34,7 @@ export async function getAllSkills(): Promise<Skill[]> {
 export async function createSkill(skill: Skill): Promise<Skill> {
   const res = await fetch(`${BASE_URL}/skill`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await getAuthHeaders(), // ✅ แนบ token
     body: JSON.stringify(skill),
   });
 
@@ -39,6 +53,7 @@ export async function createSkill(skill: Skill): Promise<Skill> {
 export async function deleteSkill(skillId: string): Promise<Skill> {
   const res = await fetch(`${BASE_URL}/skill/${skillId}`, {
     method: "DELETE",
+    headers: await getAuthHeaders(), // ✅ แนบ token
   });
 
   if (!res.ok) {
@@ -56,7 +71,7 @@ export async function deleteSkill(skillId: string): Promise<Skill> {
 export async function addSkillToStudent(skillId: string, studentId: string): Promise<Skill[]> {
   const res = await fetch(`${BASE_URL}/skill/add-to-student`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await getAuthHeaders(), // ✅ แนบ token
     body: JSON.stringify({ skillId, studentId }),
   });
 
@@ -67,5 +82,3 @@ export async function addSkillToStudent(skillId: string, studentId: string): Pro
 
   return res.json();
 }
-
-

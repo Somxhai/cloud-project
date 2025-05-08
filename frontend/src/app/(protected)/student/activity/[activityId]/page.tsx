@@ -137,7 +137,7 @@ export default function ActivityDetailPage() {
         <div className="mt-6 flex justify-end gap-4">
           <button
             onClick={() => router.back()}
-            className="rounded-full bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+            className="rounded-full bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 cursor-pointer"
           >
             ย้อนกลับ
           </button>
@@ -175,7 +175,7 @@ export default function ActivityDetailPage() {
                   alert(err.message || 'ลงทะเบียนไม่สำเร็จ');
                 }
               }}
-              className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600"
+              className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600 cursor-pointer"
             >
               ลงทะเบียนเข้าร่วมกิจกรรม
             </button>

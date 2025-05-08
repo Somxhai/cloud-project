@@ -17,27 +17,35 @@ type StudentWithSkills = {
   skills: SkillSummary[];
 };
 
-const professorId = '41b2ebef-f121-41d5-b22b-1024d1ae66a0';
+
 
 export default function ProfessorDashboard() {
   const router = useRouter();
   const [students, setStudents] = useState<StudentWithSkills[]>([]);
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
-
+  const [professorId, setProfessorId] = useState<string | null>(null);
   useEffect(() => {
     const verifyAccessAndFetch = async () => {
       try {
         const session = await fetchAuthSession();
-        const rawGroups = session.tokens?.idToken?.payload['cognito:groups'];
-        const groups = Array.isArray(rawGroups) ? rawGroups : [];
+        const token = session.tokens?.idToken?.payload;
+        const rawGroups = token?.['cognito:groups'];
+        const groups = Array.isArray(rawGroups) ? rawGroups : typeof rawGroups === 'string' ? [rawGroups] : [];
   
         if (!groups.includes('professor')) {
           setUnauthorized(true);
           return;
         }
   
-        const data = await getStudentsWithSkillsByProfessor(professorId);
+        const sub = token?.sub;
+        if (!sub || typeof sub !== 'string') {
+          throw new Error('sub not found in token');
+        }
+  
+        setProfessorId(sub);
+  
+        const data = await getStudentsWithSkillsByProfessor(sub);
         setStudents(data);
       } catch (err) {
         console.error('Auth error or fetch failed:', err);
@@ -49,6 +57,7 @@ export default function ProfessorDashboard() {
   
     verifyAccessAndFetch();
   }, []);
+  
   
 
   if (loading) return <p className="p-6">กำลังโหลดข้อมูล...</p>;

@@ -92,3 +92,16 @@ export const createProfessorByCognito = async (professor: {
     "Failed to create professor"
   ).then((res) => res.rows[0]);
 };
+
+// ดึงรายชื่ออาจารย์ทั้งหมด เรียงตามชื่อ
+export const getAllProfessors = async (): Promise<Professor[]> => {
+  const query = `
+    SELECT * FROM professor
+    ORDER BY full_name;
+  `;
+
+  return await safeQuery<{ rows: Professor[] }>(
+    (client) => client.query(query),
+    "Failed to get all professors"
+  ).then((res) => res.rows);
+};

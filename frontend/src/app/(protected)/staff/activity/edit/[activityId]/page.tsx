@@ -22,7 +22,7 @@ export default function EditActivityPage() {
     status: 0 as ActivityStatus,
     max_amount: 0,
     amount: 0,
-    event_date: '',
+    event_date: '', // yyyy-mm-dd
   });
 
   const [skills, setSkills] = useState<SkillForm[]>([]);
@@ -41,7 +41,7 @@ export default function EditActivityPage() {
           status: activity.status,
           max_amount: activity.max_amount,
           amount: activity.amount,
-          event_date: activity.event_date,
+          event_date: activity.event_date.slice(0, 10), // ✅ ให้ input type="date" รองรับ
         });
 
         setSkills(
@@ -66,10 +66,13 @@ export default function EditActivityPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === 'max_amount' ? Number(value) : value,
-    }));
+    setForm((prev) => {
+      let parsed: string | number = value;
+      if (name === 'max_amount') {
+        parsed = Number(value);
+      }
+      return { ...prev, [name]: parsed };
+    });
   };
 
   const handleSkillChange = (index: number, field: keyof SkillForm, value: string) => {
@@ -84,7 +87,7 @@ export default function EditActivityPage() {
 
     try {
       await updateActivity(activityId, form);
-      await updateActivitySkills(activityId, skills); // ต้องให้ backend รองรับ [{name, skill_type}]
+      await updateActivitySkills(activityId, skills);
       alert('อัปเดตกิจกรรมเรียบร้อยแล้ว');
       router.back();
     } catch (err) {
@@ -151,6 +154,17 @@ export default function EditActivityPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium mb-1">วันที่จัดกิจกรรม</label>
+            <input
+              type="date"
+              name="event_date"
+              value={form.event_date}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+
           {/* ----------- ทักษะที่ได้รับ ----------- */}
           <div>
             <label className="block text-sm font-bold mb-1">ทักษะที่ได้รับ</label>
@@ -189,9 +203,7 @@ export default function EditActivityPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setSkills((prev) => [...prev, { name: '', skill_type: 'hard' }])
-                }
+                onClick={() => setSkills((prev) => [...prev, { name: '', skill_type: 'hard' }])}
                 className="text-sm text-center text-gray-700 underline"
               >
                 เพิ่มทักษะ

@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { StudentActivityWithStudentInfo } from '@/types/models';
-import { getParticipantsByActivityId } from '@/lib/activity';
+import { getParticipantsByActivityId, getActivityById } from '@/lib/activity';
 import { updateStudentActivityStatus } from '@/lib/student';
 
 export default function ActivityParticipantsPage() {
   const { activityId } = useParams();
   const [participants, setParticipants] = useState<StudentActivityWithStudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activityName, setActivityName] = useState('');
 
   const fetchParticipants = async () => {
     if (!activityId || typeof activityId !== 'string') return;
@@ -24,14 +25,25 @@ export default function ActivityParticipantsPage() {
     }
   };
 
+  const fetchActivityName = async () => {
+    if (!activityId || typeof activityId !== 'string') return;
+    try {
+      const activity = await getActivityById(activityId);
+      setActivityName(activity.name);
+    } catch (err) {
+      console.error('Error fetching activity name:', err);
+    }
+  };
+
   useEffect(() => {
     fetchParticipants();
+    fetchActivityName();
   }, [activityId]);
 
   const handleStatusChange = async (studentId: string, newStatus: number) => {
     try {
       await updateStudentActivityStatus(activityId as string, studentId, newStatus);
-      fetchParticipants(); // Refresh
+      fetchParticipants(); // Reload
     } catch (err) {
       console.error('Error updating status:', err);
       alert('ไม่สามารถอัปเดตสถานะได้');
@@ -48,7 +60,9 @@ export default function ActivityParticipantsPage() {
   return (
     <div className="min-h-screen px-6 py-10 sm:px-16 bg-gray-50 text-gray-900">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold">รายชื่อผู้เข้าร่วมกิจกรรม</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">
+          รายชื่อผู้เข้าร่วม: {activityName || '...'}
+        </h1>
         <Link
           href="/staff/activities"
           className="bg-gray-800 hover:bg-gray-700 text-white px-5 py-2 rounded-lg text-sm font-medium"
@@ -86,13 +100,13 @@ export default function ActivityParticipantsPage() {
                         <div className="flex gap-2 justify-center">
                           <button
                             onClick={() => handleStatusChange(p.student_id, 1)}
-                            className="text-green-600 hover:underline"
+                            className="text-green-600 hover:underline cursor-pointer"
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleStatusChange(p.student_id, 2)}
-                            className="text-red-600 hover:underline"
+                            className="text-red-600 hover:underline cursor-pointer"
                           >
                             Deny
                           </button>
@@ -101,7 +115,7 @@ export default function ActivityParticipantsPage() {
                       {p.status === 1 && (
                         <button
                           onClick={() => handleStatusChange(p.student_id, 3)}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline cursor-pointer"
                         >
                           Completed
                         </button>
