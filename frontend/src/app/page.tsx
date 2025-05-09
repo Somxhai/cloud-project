@@ -1,4 +1,5 @@
 import Image from "next/image";
+import '@/lib/amplifyConfig';
 
 export default function Home() {
   return (

@@ -2,5 +2,7 @@
   "deno.enablePaths": [
     "./"
   ],
-  "editor.inlayHints.enabled": "off"
+  "editor.inlayHints.enabled": "off",
+  "deno.enable": true,
+  "typescript.validate.enable": false
 }
