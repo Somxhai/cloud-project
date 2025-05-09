@@ -6,6 +6,7 @@ import {
   getStudentActivityStatus,
   updateStudentActivityStatus,
   createStudentByCognito,
+  getStudentByUserId,
 } from "../database/service/student.ts";
 import { cognitoMiddleware } from "../middleware.ts"; // ใช้ cognitoMiddleware
 import { tryCatchService } from "../lib/utils.ts";
@@ -100,4 +101,12 @@ studentApp.post("/", async (c) => {
   const body = await c.req.json();
   const result = await tryCatchService(() => createStudentByCognito(body));
   return c.json(result);
+});
+
+
+studentApp.get('/profile/:userId', async (c) => {
+  const userId = c.req.param('userId');
+  if (!userId) return c.text('Missing user ID', 400);
+
+  return await tryCatchService(() => getStudentByUserId(userId)).then(data => c.json(data));
 });

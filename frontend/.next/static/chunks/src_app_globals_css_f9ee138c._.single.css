@@ -692,6 +692,10 @@
     }
   }
 
+  .border-blue-200 {
+    border-color: #c3ddfd;
+  }
+
   .border-gray-100 {
     border-color: #f3f4f6;
   }
@@ -702,6 +706,10 @@
 
   .border-gray-300 {
     border-color: #d1d5db;
+  }
+
+  .border-green-200 {
+    border-color: #bcf0da;
   }
 
   .border-red-300 {
@@ -732,6 +740,10 @@
     .bg-black\/\[\.05\] {
       background-color: color-mix(in oklab, var(--color-black) 5%, transparent);
     }
+  }
+
+  .bg-blue-50 {
+    background-color: #ebf5ff;
   }
 
   .bg-blue-100 {
@@ -768,6 +780,10 @@
 
   .bg-gray-900 {
     background-color: #111827;
+  }
+
+  .bg-green-50 {
+    background-color: #f3faf7;
   }
 
   .bg-green-100 {
@@ -1038,6 +1054,10 @@
     color: #1c64f2;
   }
 
+  .text-blue-700 {
+    color: #1a56db;
+  }
+
   .text-gray-400 {
     color: #9ca3af;
   }
@@ -1072,6 +1092,10 @@
 
   .text-indigo-600 {
     color: #5850ec;
+  }
+
+  .text-red-500 {
+    color: #f05252;
   }
 
   .text-red-600 {

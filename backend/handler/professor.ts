@@ -4,6 +4,7 @@ import {
   getAllStudentByProfessor,
   getStudentsWithSkillsByProfessor,
   createProfessorByCognito,
+  getProfessorByUserId,
 } from "../database/service/professor.ts";
 
 import {
@@ -92,4 +93,11 @@ professorApp.delete("/staff/professors/:professorId/students/:studentId", async 
   const { professorId, studentId } = c.req.param();
   await tryCatchService(() => removeStudentFromProfessor(professorId, studentId));
   return c.json({ success: true });
+});
+
+professorApp.get('/profile/:userId', async (c) => {
+  const userId = c.req.param('userId');
+  if (!userId) return c.text('Missing user ID', 400);
+
+  return await tryCatchService(() => getProfessorByUserId(userId)).then(data => c.json(data));
 });

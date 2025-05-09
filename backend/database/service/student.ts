@@ -265,3 +265,14 @@ export const createStudentByCognito = async (student: {
     "Failed to create student"
   ).then((res) => res.rows[0]);
 };
+
+
+export const getStudentByUserId = async (userId: UUIDTypes) => {
+  const query = `
+    SELECT * FROM student WHERE user_id = $1 LIMIT 1;
+  `;
+  return await safeQuery<{ rows: Student[] }>(
+    (client) => client.query(query, [userId]),
+    "Failed to get student profile"
+  ).then(res => res.rows[0]);
+};

@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
-import type { ActivityStatus } from '@/types/models';
 import { getActivityById, updateActivity, updateActivitySkills } from '@/lib/activity';
 
+type ActivityStatus = 0 | 1 | 2;
 type SkillForm = {
   id?: string;
   name: string;
@@ -22,7 +21,7 @@ export default function EditActivityPage() {
     status: 0 as ActivityStatus,
     max_amount: 0,
     amount: 0,
-    event_date: '', // yyyy-mm-dd
+    event_date: '',
   });
 
   const [skills, setSkills] = useState<SkillForm[]>([]);
@@ -34,14 +33,13 @@ export default function EditActivityPage() {
     const fetchData = async () => {
       try {
         const activity = await getActivityById(activityId);
-
         setForm({
           name: activity.name,
           description: activity.description,
           status: activity.status,
           max_amount: activity.max_amount,
           amount: activity.amount,
-          event_date: activity.event_date.slice(0, 10), // ✅ ให้ input type="date" รองรับ
+          event_date: activity.event_date.slice(0, 10),
         });
 
         setSkills(
@@ -66,19 +64,21 @@ export default function EditActivityPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prev) => {
-      let parsed: string | number = value;
-      if (name === 'max_amount') {
-        parsed = Number(value);
-      }
-      return { ...prev, [name]: parsed };
-    });
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === 'max_amount' ? Number(value) : value,
+    }));
   };
 
   const handleSkillChange = (index: number, field: keyof SkillForm, value: string) => {
-    const newSkills = [...skills];
-    newSkills[index][field] = value as any;
-    setSkills(newSkills);
+    const updated = [...skills];
+    updated[index][field] = value as any;
+    setSkills(updated);
+  };
+
+  const handleDeleteSkill = (index: number) => {
+    const updated = skills.filter((_, i) => i !== index);
+    setSkills(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,20 +101,26 @@ export default function EditActivityPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col items-center p-6">
       <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-lg">
-        <div className="flex items-center mb-6">
-          <Image src="/antivity2.png" alt="Antivity Icon" width={32} height={32} />
-          <h1 className="text-xl font-bold ml-2">แก้ไขกิจกรรม</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold">แก้ไขกิจกรรม</h1>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="text-sm text-gray-600 underline"
+          >
+            ← ย้อนกลับ
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium mb-1">ชื่อกิจกรรม</label>
             <input
-              type="text"
               name="name"
               value={form.name}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2 text-sm"
+              placeholder="ชื่อกิจกรรม"
             />
           </div>
 
@@ -124,8 +130,32 @@ export default function EditActivityPage() {
               name="description"
               value={form.description}
               onChange={handleChange}
-              rows={3}
               className="w-full border rounded px-3 py-2 text-sm"
+              rows={3}
+              placeholder="รายละเอียดกิจกรรม"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">วันที่จัดกิจกรรม</label>
+            <input
+              type="date"
+              name="event_date"
+              value={form.event_date}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">จำนวนผู้เข้าร่วมสูงสุด</label>
+            <input
+              type="number"
+              name="max_amount"
+              value={form.max_amount}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2 text-sm"
+              placeholder="0"
             />
           </div>
 
@@ -143,75 +173,48 @@ export default function EditActivityPage() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">จำนวนผู้เข้าร่วมสูงสุด</label>
-            <input
-              type="number"
-              name="max_amount"
-              value={form.max_amount}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">วันที่จัดกิจกรรม</label>
-            <input
-              type="date"
-              name="event_date"
-              value={form.event_date}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          {/* ----------- ทักษะที่ได้รับ ----------- */}
+          {/* ---------------- ทักษะ ---------------- */}
           <div>
             <label className="block text-sm font-bold mb-1">ทักษะที่ได้รับ</label>
-            <div className="space-y-3 bg-gray-100 rounded-md p-3">
+            <div className="space-y-3 bg-gray-50 rounded-md p-3">
               {skills.map((s, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <span className="text-sm w-4">{index + 1}</span>
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">{index + 1}</span>
                   <input
                     type="text"
-                    className="flex-1 border rounded px-3 py-1 text-sm"
                     value={s.name}
                     onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
+                    className="flex-1 border rounded px-2 py-1 text-sm"
+                    placeholder="ชื่อทักษะ"
                   />
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleSkillChange(index, 'skill_type', 'soft')}
-                      className={`px-2 py-1 rounded text-sm ${
-                        s.skill_type === 'soft' ? 'bg-gray-300' : 'bg-gray-100'
-                      }`}
-                    >
-                      Soft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSkillChange(index, 'skill_type', 'hard')}
-                      className={`px-2 py-1 rounded text-sm ${
-                        s.skill_type === 'hard' ? 'bg-gray-300' : 'bg-gray-100'
-                      }`}
-                    >
-                      Hard
-                    </button>
-                  </div>
+                  <select
+                    value={s.skill_type}
+                    onChange={(e) => handleSkillChange(index, 'skill_type', e.target.value)}
+                    className="border rounded px-2 py-1 text-sm"
+                  >
+                    <option value="soft">Soft</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSkill(index)}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    ลบ
+                  </button>
                 </div>
               ))}
-
               <button
                 type="button"
-                onClick={() => setSkills((prev) => [...prev, { name: '', skill_type: 'hard' }])}
-                className="text-sm text-center text-gray-700 underline"
+                onClick={() => setSkills([...skills, { name: '', skill_type: 'hard' }])}
+                className="text-sm text-center text-blue-600 underline"
               >
-                เพิ่มทักษะ
+                + เพิ่มทักษะ
               </button>
             </div>
           </div>
 
-          {/* ----------- ปุ่ม ----------- */}
+          {/* ---------------- ปุ่ม ---------------- */}
           <div className="flex justify-between gap-2 pt-4">
             <button
               type="submit"

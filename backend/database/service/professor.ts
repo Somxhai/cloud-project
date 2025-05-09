@@ -105,3 +105,13 @@ export const getAllProfessors = async (): Promise<Professor[]> => {
     "Failed to get all professors"
   ).then((res) => res.rows);
 };
+
+export const getProfessorByUserId = async (userId: UUIDTypes) => {
+  const query = `
+    SELECT * FROM professor WHERE user_id = $1 LIMIT 1;
+  `;
+  return await safeQuery<{ rows: Professor[] }>(
+    (client) => client.query(query, [userId]),
+    "Failed to get professor profile"
+  ).then(res => res.rows[0]);
+};

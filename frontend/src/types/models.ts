@@ -124,3 +124,24 @@ export interface StudentWithSkills {
   year: number;
   skills: string[]; // เช่น ['Leadership:3', 'Design Thinking:5']
 }
+
+
+export type StudentDetail = {
+  id: string;
+  user_id: string;
+  student_code: string;
+  full_name: string;
+  faculty: string;
+  major: string;
+  year: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProfessorDetail = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  created_at: string;
+  updated_at: string;
+};

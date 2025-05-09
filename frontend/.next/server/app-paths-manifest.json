@@ -1,12 +1,15 @@
 {
   "/(protected)/professor/dashboard/page": "app/(protected)/professor/dashboard/page.js",
+  "/(protected)/staff/activities/[activityId]/page": "app/(protected)/staff/activities/[activityId]/page.js",
+  "/(protected)/staff/activities/page": "app/(protected)/staff/activities/page.js",
+  "/(protected)/staff/activity/edit/[activityId]/page": "app/(protected)/staff/activity/edit/[activityId]/page.js",
+  "/(protected)/staff/activity/new/page": "app/(protected)/staff/activity/new/page.js",
   "/(protected)/staff/professorstudents/page": "app/(protected)/staff/professorstudents/page.js",
+  "/(protected)/student/activity/[activityId]/page": "app/(protected)/student/activity/[activityId]/page.js",
   "/(protected)/student/activityenroll/page": "app/(protected)/student/activityenroll/page.js",
   "/(protected)/student/profile/[studentId]/page": "app/(protected)/student/profile/[studentId]/page.js",
-  "/(public)/auth/confirm/page": "app/(public)/auth/confirm/page.js",
   "/(public)/auth/profile/page": "app/(public)/auth/profile/page.js",
   "/(public)/auth/signin/page": "app/(public)/auth/signin/page.js",
-  "/(public)/auth/signup/page": "app/(public)/auth/signup/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js"
 }
