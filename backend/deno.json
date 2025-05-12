@@ -9,10 +9,11 @@
   },
   "tasks": {
     "start": "deno run --allow-net --allow-env main.ts",
-    "dev": "deno run --allow-net --env-file --allow-env --allow-write --allow-read main.ts"
+    "dev": "deno run --watch --allow-net --env-file --allow-env --allow-write --allow-read main.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    "noImplicitAny": false
   }
 }

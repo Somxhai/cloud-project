@@ -5,6 +5,9 @@ import {
   StudentActivity,
   StudentWithSkills,
   ActivityWithSkills,
+  Curriculum,
+  CreateStudentInput,
+  StudentActivityWithActivityInfo
 } from '@/types/models';
 
 import { fetchAuthSession } from '@aws-amplify/auth';
@@ -63,7 +66,7 @@ export async function getStudentSkills(studentId: string): Promise<Skill[]> {
 /**
  * POST /students/join
  * นักศึกษาเข้าร่วมกิจกรรม
- */
+
 export async function joinActivity(student_id: string, activity_id: string): Promise<StudentActivity> {
   const res = await fetch(`${BASE_URL}/student/join`, {
     method: 'POST',
@@ -74,11 +77,11 @@ export async function joinActivity(student_id: string, activity_id: string): Pro
   if (!res.ok) throw new Error(await res.text() || 'เข้าร่วมกิจกรรมไม่สำเร็จ');
   return await res.json();
 }
-
+ */
 /**
  * GET /students/detail/:studentId
  * ดึงข้อมูลนักศึกษาพร้อมชื่ออาจารย์และ skills แบบ soft/hard
- */
+
 export async function getStudentFullDetail(studentId: string): Promise<
   Student & {
     professor_name: string | null;
@@ -93,11 +96,11 @@ export async function getStudentFullDetail(studentId: string): Promise<
   if (!res.ok) throw new Error('ไม่พบข้อมูลนักศึกษา');
   return res.json();
 }
-
+ */
 /**
  * GET /students/completed/:studentId
  * ดึงกิจกรรมที่เข้าร่วมแล้ว (status = 3) พร้อม skills
- */
+
 export async function getCompletedActivitiesWithSkills(studentId: string): Promise<ActivityWithSkills[]> {
   const res = await fetch(`${BASE_URL}/student/completed/${studentId}`, {
     cache: 'no-store',
@@ -106,10 +109,10 @@ export async function getCompletedActivitiesWithSkills(studentId: string): Promi
   if (!res.ok) throw new Error('ไม่สามารถดึงกิจกรรมที่สำเร็จได้');
   return res.json();
 }
-
+ */
 /**
  * ตรวจสอบว่านักศึกษาเคยลงทะเบียนกิจกรรมหรือยัง
- */
+
 export async function getStudentActivityStatus(student_id: string, activity_id: string): Promise<StudentActivity | null> {
   const res = await fetch(
     `${BASE_URL}/student/activity-status?student_id=${student_id}&activity_id=${activity_id}`,
@@ -120,7 +123,7 @@ export async function getStudentActivityStatus(student_id: string, activity_id: 
   if (!res.ok) return null;
   return await res.json();
 }
-
+ */
 /**
  * PUT /student/update-status
  * เปลี่ยนสถานะการเข้าร่วมของนักศึกษา
@@ -132,4 +135,93 @@ export async function updateStudentActivityStatus(activity_id: string, student_i
     body: JSON.stringify({ activity_id, student_id, status }),
   });
   if (!res.ok) throw new Error('Failed to update student activity status');
+}
+
+
+
+
+
+
+
+/* ดึงรายละเอียดนักเรียนแบบเต็ม */
+export async function getStudentFullDetail(studentId: string) {
+  const res = await fetch(`${BASE_URL}/student/${studentId}/detail`);
+  if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลนักศึกษา');
+  return await res.json();
+}
+
+/* ดึงกิจกรรมที่เคยเข้าร่วม (แบบเสร็จสิ้น) */
+export async function getCompletedActivitiesWithSkills(studentId: string) {
+  const res = await fetch(`${BASE_URL}/student/${studentId}/activities/completed`);
+  if (!res.ok) throw new Error('ไม่สามารถดึงกิจกรรมที่เสร็จสิ้น');
+  return await res.json();
+}
+
+
+
+export const createStudent = async (data: CreateStudentInput): Promise<Student> => {
+  const res = await fetch(`${BASE_URL}/student`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('ไม่สามารถสร้างนักศึกษาได้');
+  return res.json();
+};
+
+export const getAllCurricula = async (): Promise<Curriculum[]> => {
+  const res = await fetch(`${BASE_URL}/curriculum`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('ไม่สามารถโหลดหลักสูตร');
+  return res.json();
+};
+
+
+
+
+
+
+export async function getActivityDetail(id: string): Promise<ActivityWithSkills> {
+  const res = await fetch(`${BASE_URL}/activity/${id}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('ไม่สามารถโหลดข้อมูลกิจกรรม');
+  return res.json();
+}
+
+export async function getStudentActivityStatus(studentId: string, activityId: string) {
+  const res = await fetch(`${BASE_URL}/student-activity/status?studentId=${studentId}&activityId=${activityId}`);
+  if (!res.ok) throw new Error('ไม่สามารถดึงสถานะได้');
+  const data = await res.json();
+  return {
+    status: data.status,
+    confirmation_status: data.confirmation_status ?? 0
+  };
+}
+
+
+export async function joinActivity(studentId: string, activityId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/student-activity/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ student_id: studentId, activity_id: activityId }),
+  });
+  if (!res.ok) throw new Error('ไม่สามารถลงทะเบียนเข้าร่วมกิจกรรม');
+}
+
+
+
+
+export async function getMyActivities(studentId: string): Promise<StudentActivityWithActivityInfo[]> {
+  const res = await fetch(`${BASE_URL}/student/my-activities?studentId=${studentId}`);
+  if (!res.ok) throw new Error('โหลดกิจกรรมของฉันล้มเหลว');
+  return res.json();
+}
+
+
+export async function confirmAttendance(studentId: string, activityId: string, status: 1 | 2) {
+  const res = await fetch(`${BASE_URL}/student-activity/${studentId}/confirm`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activityId, status }),
+  });
+  if (!res.ok) throw new Error('ไม่สามารถยืนยันได้');
+  return await res.json();
 }

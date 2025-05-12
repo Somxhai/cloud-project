@@ -1,99 +1,96 @@
-import { UUIDTypes } from "uuid";
-import { safeQuery } from "../../lib/utils.ts";
-import { ProfessorStudent,StudentWithSkills, Professor } from "../../type/app.ts";
+import { safeQuery } from '../../lib/utils.ts';
+import { Professor } from '../../type/app.ts';
+import { UUIDTypes } from '../../lib/uuid.ts';
 
-// ฟังก์ชันนี้จะได้รายชื่อนักศึกษาที่อยู่ภายใต้การดูแลของอาจารย์
-export const getAllStudentByProfessor = async (professorId: UUIDTypes) => {
-  return await safeQuery<{ rows: ProfessorStudent[] }>(
-    (client) =>
-      client.query(
-        `SELECT student_id FROM "professor_student" WHERE professor_id = $1;`,
-        [professorId]
-      ),
-    "Failed to get all students by professor"
-  ).then((res) => res.rows);
-};
-
-
-
-export const getStudentsWithSkillsByProfessor = async (
-  professorId: UUIDTypes
-): Promise<StudentWithSkills[]> => {
-  const query = `
-    SELECT 
-      st.id,
-      st.full_name,
-      st.student_code,
-      st.year,
-      sk.name AS skill_name,
-      ss.skill_level
-    FROM professor_student ps
-    JOIN student st ON ps.student_id = st.id
-    LEFT JOIN student_skill ss ON st.id = ss.student_id
-    LEFT JOIN skill sk ON ss.skill_id = sk.id
-    WHERE ps.professor_id = $1
-  `;
-
-  const rows = await safeQuery<{
-    rows: {
+export const getStudentsWithSkillComparison = async (professorId: string): Promise<any[]> => {
+  return await safeQuery(async (client) => {
+    const students = await client.queryObject<{
       id: string;
       full_name: string;
       student_code: string;
       year: number;
-      skill_name: string | null;
-      skill_level: number | null;
-    }[];
-  }>(
-    (client) => client.query(query, [professorId]),
-    "Failed to get students with skills by professor"
-  ).then((res) => res.rows);
+      curriculum_id: string | null;
+    }>(`
+      SELECT s.id, s.full_name, s.student_code, s.year, s.curriculum_id
+      FROM professor_student ps
+      JOIN student s ON ps.student_id = s.id
+      WHERE ps.professor_id = $1
+    `, [professorId]);
 
-  // Group by student ID
-  const map = new Map<string, StudentWithSkills>();
+    const result: {
+      id: string;
+      full_name: string;
+      student_code: string;
+      year: number;
+      curriculum_id: string | null;
+      skills_have: string[];
+      skills_missing: string[];
+    }[] = [];
 
-  for (const row of rows) {
-    const key = row.id;
+    for (const stu of students.rows) {
+      const skillsHaveRes = await client.queryArray<[string]>(
+        `SELECT sk.name_th FROM student_skill ss JOIN skill sk ON ss.skill_id = sk.id WHERE ss.student_id = $1`,
+        [stu.id]
+      );
+      const skillsHave = skillsHaveRes.rows.map(([s]) => s);
 
-    if (!map.has(key)) {
-      map.set(key, {
-        id: row.id,
-        full_name: row.full_name,
-        student_code: row.student_code,
-        year: row.year,
-        skills: row.skill_name && row.skill_level !== null
-          ? [`${row.skill_name}:${row.skill_level}`]
-          : [],
+      const skillsMissingRes = await client.queryArray<[string]>(
+        `
+        SELECT sk.name_th
+        FROM curriculum_skill cs
+        JOIN skill sk ON sk.id = cs.skill_id
+        WHERE cs.curriculum_id = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM student_skill ss
+          WHERE ss.student_id = $2 AND ss.skill_id = cs.skill_id
+        )
+        `,
+        [stu.curriculum_id, stu.id]
+      );
+      const skillsMissing = skillsMissingRes.rows.map(([s]) => s);
+
+      result.push({
+        ...stu,
+        skills_have: skillsHave,
+        skills_missing: skillsMissing,
       });
-    } else if (row.skill_name && row.skill_level !== null) {
-      map.get(key)!.skills.push(`${row.skill_name}:${row.skill_level}`);
     }
-  }
 
-  return Array.from(map.values());
+    return result;
+  }, 'Failed to get student skill summary');
 };
 
 
 
+export const createProfessor = async (
+  data: Omit<Professor, 'id' | 'created_at' | 'updated_at' | 'is_active'>
+): Promise<Professor> => {
+  return await safeQuery(async (client) => {
+    const result = await client.queryObject<Professor>({
+      text: `
+        INSERT INTO professor (
+          user_id, full_name, email, phone, department,
+          faculty, position, profile_picture_url
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *;
+      `,
+      args: [
+        data.user_id,
+        data.full_name,
+        data.email ?? null,
+        data.phone ?? null,
+        data.department ?? null,
+        data.faculty ?? null,
+        data.position ?? null,
+        data.profile_picture_url ?? null,
+      ],
+    });
 
-export const createProfessorByCognito = async (professor: {
-  id: UUIDTypes;
-  user_id: UUIDTypes;
-  full_name: string;
-}) => {
-  const query = `
-    INSERT INTO professor (id, user_id, full_name)
-    VALUES ($1, $2, $3)
-    RETURNING *;
-  `;
-  const values = [professor.id, professor.user_id, professor.full_name];
-
-  return await safeQuery<{ rows: Professor[] }>(
-    (client) => client.query(query, values),
-    "Failed to create professor"
-  ).then((res) => res.rows[0]);
+    return result.rows[0];
+  }, 'Failed to create professor');
 };
 
-// ดึงรายชื่ออาจารย์ทั้งหมด เรียงตามชื่อ
+
 export const getAllProfessors = async (): Promise<Professor[]> => {
   const query = `
     SELECT * FROM professor
@@ -101,17 +98,18 @@ export const getAllProfessors = async (): Promise<Professor[]> => {
   `;
 
   return await safeQuery<{ rows: Professor[] }>(
-    (client) => client.query(query),
+    (client) => client.queryObject(query),
     "Failed to get all professors"
   ).then((res) => res.rows);
 };
 
-export const getProfessorByUserId = async (userId: UUIDTypes) => {
-  const query = `
-    SELECT * FROM professor WHERE user_id = $1 LIMIT 1;
-  `;
-  return await safeQuery<{ rows: Professor[] }>(
-    (client) => client.query(query, [userId]),
-    "Failed to get professor profile"
-  ).then(res => res.rows[0]);
+
+export const getProfessorById = async (id: string): Promise<Professor | null> => {
+  return await safeQuery(async (client) => {
+    const res = await client.queryObject<Professor>({
+      text: 'SELECT * FROM professor WHERE id = $1',
+      args: [id],
+    });
+    return res.rows[0] ?? null;
+  }, 'Failed to get professor');
 };

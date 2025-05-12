@@ -1,278 +1,154 @@
-import { UUIDTypes } from "uuid";
-import { safeQuery } from "../../lib/utils.ts";
-import { Student } from "../../type/app.ts";
-import { StudentActivity } from "../../type/app.ts";
+import { safeQuery } from '../../lib/utils.ts';
+import type { Student,StudentActivityWithActivityInfo } from '../../type/app.ts';
+import { UUIDTypes } from "../../lib/uuid.ts";
 
-// ฟังก์ชันนี้จะได้กิจกรรมที่นักศึกษาเข้าร่วม
-export const getStudentActivities = async (studentId: UUIDTypes) => {
-  return await safeQuery<{ rows: Student[] }>(
-    (client) =>
-      client.query(
-        `SELECT * FROM "student_activity" WHERE student_id = $1 ORDER BY participated_at;`,
-        [studentId]
-      ),
-    "Failed to get student activities"
-  ).then((res) => res.rows);
-};
+type CreateStudentInput = Omit<Student, 'id' | 'created_at' | 'updated_at'>;
 
-// ฟังก์ชันนี้จะได้ทักษะของนักศึกษาจากกิจกรรมที่เคยเข้าร่วม
-export const getStudentSkills = async (studentId: UUIDTypes) => {
-  return await safeQuery<{ rows: Student[] }>(
-    (client) =>
-      client.query(
-        `SELECT skill.* FROM "skill" JOIN "activity_skill" ON skill.id = activity_skill.skill_id
-         JOIN "student_activity" ON student_activity.activity_id = activity_skill.activity_id
-         WHERE student_activity.student_id = $1;`,
-        [studentId]
-      ),
-    "Failed to get student skills"
-  ).then((res) => res.rows);
-};
+export const createStudent = (data: CreateStudentInput): Promise<Student> => {
+  return safeQuery(async (client) => {
+    const result = await client.queryObject<Student>({
+      text: `
+        INSERT INTO student (
+          user_id, student_code, full_name, faculty, major, year,
+          curriculum_id, profile_picture_url, email, phone,
+          gender, birth_date, line_id, student_status, is_active
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10,
+          $11, $12, $13, $14, $15
+        )
+        RETURNING *;
+      `,
+      args: [
+        data.user_id,
+        data.student_code,
+        data.full_name,
+        data.faculty,
+        data.major,
+        data.year,
+        data.curriculum_id ?? null,
+        data.profile_picture_url ?? null,
+        data.email ?? null,
+        data.phone ?? null,
+        data.gender ?? null,
+        data.birth_date ?? null,
+        data.line_id ?? null,
+        data.student_status,
+        data.is_active,
+      ],
+    });
 
-// ฟังก์ชันนี้จะได้ข้อมูลทั้งหมดของนักศึกษา
-export const getAllStudent = async () => {
-  return await safeQuery<{ rows: Student[] }>(
-    (client) =>
-      client.query(
-        `SELECT * FROM "student";`
-      ),
-    "Failed to get all students"
-  ).then((res) => res.rows);
-};
-
-// ฟังก์ชันนี้จะสร้างนักศึกษาใหม่
-export const createStudent = async (userId: UUIDTypes, faculty: string, major: string, year: number) => {
-  const query = `
-    INSERT INTO "student" (user_id, faculty, major, year)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *;  // Returns the newly created student
-  `;
-  
-  const values = [userId, faculty, major, year];
-  
-  return await safeQuery<{ rows: Student[] }>(
-    (client) => client.query(query, values),
-    "Failed to create student"
-  ).then((res) => res.rows[0]);  // Return the newly created student (first row of result)
+    return result.rows[0];
+  }, 'Failed to create student');
 };
 
 
+// deno-lint-ignore no-explicit-any
+export const getStudentFullDetail = (id: string): Promise<any> => {
+  return safeQuery(async (client) => {
+    const studentRes = await client.queryObject({
+      text: `
+        SELECT
+          s.*,
+          c.name AS curriculum_name,
+          p.full_name AS professor_name
+        FROM student s
+        LEFT JOIN curriculum c ON s.curriculum_id = c.id
+        LEFT JOIN professor_student ps ON ps.student_id = s.id
+        LEFT JOIN professor p ON ps.professor_id = p.id
+        WHERE s.id = $1
+      `,
+      args: [id],
+    });
 
+    const softSkills = await client.queryArray<[string, number]>(`
+      SELECT s.name_th, ss.level
+      FROM student_skill ss
+      JOIN skill s ON s.id = ss.skill_id
+      WHERE ss.student_id = $1 AND s.skill_type = 'soft'
+    `, [id]);
 
+    const hardSkills = await client.queryArray<[string, number]>(`
+      SELECT s.name_th, ss.level
+      FROM student_skill ss
+      JOIN skill s ON s.id = ss.skill_id
+      WHERE ss.student_id = $1 AND s.skill_type = 'hard'
+    `, [id]);
 
-
-
-
-
-export const joinActivity = async (studentId: UUIDTypes, activityId: UUIDTypes): Promise<StudentActivity> => {
-  const query = `
-    INSERT INTO student_activity (student_id, activity_id)
-    VALUES ($1, $2)
-    RETURNING *;
-  `;
-  const values = [studentId, activityId];
-
-  return await safeQuery<{ rows: StudentActivity[] }>(
-    (client) => client.query(query, values),
-    "Failed to join activity"
-  ).then(res => res.rows[0]);
+    const student = studentRes.rows[0];
+    return {
+      ...(student ?? {}),
+      Skill_S: softSkills.rows.map(([name, level]) => `${name}:${level}`),
+      Skill_H: hardSkills.rows.map(([name, level]) => `${name}:${level}`),
+    };
+  }, 'Failed to get student full detail');
 };
 
-export const getStudentFullDetail = async (studentId: UUIDTypes) => {
-  const query = `
-    SELECT
-      st.*,
-      pr.full_name AS professor_name,
-      sk.name AS skill_name,
-      sk.skill_type,
-      ss.skill_level
-    FROM student st
-    LEFT JOIN professor_student ps ON ps.student_id = st.id
-    LEFT JOIN professor pr ON ps.professor_id = pr.id
-    LEFT JOIN student_skill ss ON ss.student_id = st.id
-    LEFT JOIN skill sk ON sk.id = ss.skill_id
-    WHERE st.id = $1;
-  `;
 
-  const rows = await safeQuery<{
-    rows: {
-      id: string;
-      user_id: string;
-      full_name: string;
-      student_code: string;
-      faculty: string;
-      major: string;
-      year: number;
-      created_at: string;
-      updated_at: string;
-      professor_name: string | null;
-      skill_name: string | null;
-      skill_type: "soft" | "hard" | null;
-      skill_level: number | null;
-    }[];
-  }>(
-    (client) => client.query(query, [studentId]),
-    "Failed to get full student detail"
-  ).then(res => res.rows);
+// deno-lint-ignore no-explicit-any
+export const getCompletedActivitiesWithSkills = (studentId: string): Promise<any[]> => {
+  return safeQuery(async (client) => {
+    // deno-lint-ignore no-explicit-any
+    const result = await client.queryObject<any>({
+      text: `
+        SELECT a.id, a.name, a.event_date, a.cover_image_url,
+          COALESCE(json_agg(DISTINCT s.name_th) FILTER (WHERE s.id IS NOT NULL), '[]') AS skills
+        FROM student_activity sa
+        JOIN activity a ON sa.activity_id = a.id
+        LEFT JOIN activity_skill ak ON ak.activity_id = a.id
+        LEFT JOIN skill s ON s.id = ak.skill_id
+        WHERE sa.student_id = $1 AND sa.status = 3
+        GROUP BY a.id
+        ORDER BY a.event_date DESC
+      `,
+      args: [studentId],
+    });
 
-  if (rows.length === 0) return null;
+    return result.rows;
+  }, 'Failed to get completed activities with skills');
+};
 
-  const base = {
-    id: rows[0].id,
-    user_id: rows[0].user_id,
-    full_name: rows[0].full_name,
-    student_code: rows[0].student_code,
-    faculty: rows[0].faculty,
-    major: rows[0].major,
-    year: rows[0].year,
-    created_at: rows[0].created_at,
-    updated_at: rows[0].updated_at,
-    professor_name: rows[0].professor_name,
-    Skill_H: [] as string[],
-    Skill_S: [] as string[],
-  };
+export const addOrUpdateStudentSkills = (
+  studentId: string,
+  skills: { skill_id: string; skill_level: number }[]
+): Promise<void> => {
+  return safeQuery(async (client) => {
+    await client.queryObject('BEGIN');
 
-  for (const row of rows) {
-    if (row.skill_name && row.skill_level !== null) {
-      const formatted = `${row.skill_name}:${row.skill_level}`;
-      if (row.skill_type === "hard") base.Skill_H.push(formatted);
-      else if (row.skill_type === "soft") base.Skill_S.push(formatted);
+    for (const skill of skills) {
+      await client.queryObject(
+        `
+        INSERT INTO student_skill (student_id, skill_id, level)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (student_id, skill_id)
+        DO UPDATE SET
+          level = LEAST(5, student_skill.level + $3),
+          updated_at = CURRENT_TIMESTAMP;
+        `,
+        [studentId, skill.skill_id, skill.skill_level]
+      );
     }
-  }
 
-  return base;
+    await client.queryObject('COMMIT');
+  }, 'Failed to add/update student skills');
 };
 
 
-
-type ActivityWithSkills = {
-  id: string;
-  name: string;
-  event_date: string;
-  amount: number;
-  max_amount: number;
-  skills: string[];
-};
-
-export const getCompletedActivitiesWithSkills = async (studentId: UUIDTypes): Promise<ActivityWithSkills[]> => {
-  const query = `
-    SELECT a.id, a.name, a.event_date, a.amount, a.max_amount, s.name AS skill_name
-    FROM student_activity sa
-    JOIN activity a ON a.id = sa.activity_id
-    LEFT JOIN activity_skill ak ON ak.activity_id = a.id
-    LEFT JOIN skill s ON ak.skill_id = s.id
-    WHERE sa.student_id = $1 AND sa.status = 3
-    ORDER BY a.event_date
-  `;
-
-  const rows = await safeQuery<{
-    rows: {
-      id: string;
-      name: string;
-      event_date: string;
-      amount: number;
-      max_amount: number;
-      skill_name: string | null;
-    }[];
-  }>(
-    (client) => client.query(query, [studentId]),
-    "Failed to get completed activities"
-  ).then(res => res.rows);
-
-  // Group by activity
-  const map = new Map<string, ActivityWithSkills>();
-
-  for (const row of rows) {
-    if (!map.has(row.id)) {
-      map.set(row.id, {
-        id: row.id,
-        name: row.name,
-        event_date: row.event_date,
-        amount: row.amount,
-        max_amount: row.max_amount,
-        skills: row.skill_name ? [row.skill_name] : [],
-      });
-    } else if (row.skill_name) {
-      map.get(row.id)!.skills.push(row.skill_name);
-    }
-  }
-
-  return Array.from(map.values());
-};
-
-
-
-export const getStudentActivityStatus = async (studentId: UUIDTypes, activityId: UUIDTypes) => {
-  const query = `
-    SELECT * FROM student_activity
-    WHERE student_id = $1 AND activity_id = $2
-    LIMIT 1;
-  `;
-  return await safeQuery<{ rows: StudentActivity[] }>(
-    (client) => client.query(query, [studentId, activityId]),
-    "Failed to get student activity status"
-  ).then(res => res.rows[0] ?? null);
-};
-
-
-
-export const updateStudentActivityStatus = async (
-  activityId: UUIDTypes,
-  studentId: UUIDTypes,
-  status: number
-) => {
-  const query = `
-    UPDATE student_activity
-    SET status = $1
-    WHERE activity_id = $2 AND student_id = $3
-    RETURNING *;
-  `;
-  return await safeQuery<{ rows: StudentActivity[] }>(
-    (client) => client.query(query, [status, activityId, studentId]),
-    "Failed to update student activity status"
-  ).then((res) => res.rows[0]);
-};
-
-
-
-
-export const createStudentByCognito = async (student: {
-  id: UUIDTypes;
-  user_id: UUIDTypes;
-  student_code: string;
-  full_name: string;
-  faculty: string;
-  major: string;
-  year: number;
-}) => {
-  const query = `
-    INSERT INTO student (id, user_id, student_code, full_name, faculty, major, year)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *;
-  `;
-  const values = [
-    student.id,
-    student.user_id,
-    student.student_code,
-    student.full_name,
-    student.faculty,
-    student.major,
-    student.year,
-  ];
-
-  return await safeQuery<{ rows: Student[] }>(
-    (client) => client.query(query, values),
-    "Failed to create student"
-  ).then((res) => res.rows[0]);
-};
-
-
-export const getStudentByUserId = async (userId: UUIDTypes) => {
-  const query = `
-    SELECT * FROM student WHERE user_id = $1 LIMIT 1;
-  `;
-  return await safeQuery<{ rows: Student[] }>(
-    (client) => client.query(query, [userId]),
-    "Failed to get student profile"
-  ).then(res => res.rows[0]);
+export const getStudentActivitiesByStudent = (
+  studentId: UUIDTypes
+): Promise<StudentActivityWithActivityInfo[]> => {
+  return safeQuery(async (client) => {
+    const result = await client.queryObject<StudentActivityWithActivityInfo>({
+      text: `
+        SELECT sa.*, a.name AS activity_name, a.event_date
+        FROM student_activity sa
+        JOIN activity a ON sa.activity_id = a.id
+        WHERE sa.student_id = $1
+        ORDER BY a.event_date DESC
+      `,
+      args: [studentId],
+    });
+    return result.rows;
+  }, 'Failed to fetch student activities');
 };

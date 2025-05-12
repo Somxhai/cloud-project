@@ -1,184 +1,252 @@
+// src/app/(protected)/student/activity/[activityId]/page.tsx
 'use client';
 
+import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { getActivityDetail } from '@/lib/activity';
-import { joinActivity, getStudentActivityStatus } from '@/lib/student';
-import type { ActivityWithSkills } from '@/types/models';
+import {
+  getActivityDetail,
+} from '@/lib/activity';
+import {
+  getStudentActivityStatus,
+  joinActivity,
+  confirmAttendance,
+} from '@/lib/student';
 import { formatDateThai } from '@/lib/utils/date';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import type { ActivityWithFullSkills } from '@/types/models';
 
-export default function ActivityDetailPage() {
+/* ----------------------- label helper ----------------------- */
+const statusLabel = ['เปิดรับ', 'ปิดรับ', 'ยกเลิก', 'เสร็จสิ้น'] as const;
+
+/* ------------------------- page ----------------------------- */
+export default function StudentActivityDetailPage() {
   const router = useRouter();
-  const { activityId } = useParams();
-  const [activity, setActivity] = useState<ActivityWithSkills | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-   // TODO: ดึงจาก auth จริง
+  const { activityId } = useParams() as { activityId: string };
+  const studentId = 'cac8754c-b80d-4c33-a7c4-1bed9563ee1b'; // TODO – real id from auth
+
+  /* data */
+  const [activity, setActivity] = useState<ActivityWithFullSkills | null>(null);
   const [joinStatus, setJoinStatus] = useState<0 | 1 | 2 | 3 | null>(null);
-  const [statusLoading, setStatusLoading] = useState(true);
+  const [confirmStatus, setConfirmStatus] = useState<0 | 1 | 2 | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [stateLoading, setStateLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-
-
-  const [studentId, setStudentId] = useState<string | null>(null);
-
+  /* fetch */
   useEffect(() => {
-    const load = async () => {
-      const session = await fetchAuthSession();
-      const sub = session.tokens?.idToken?.payload.sub;
-      console.log('🔑 sub:', sub);
-  
-      if (typeof sub === 'string') {
-        setStudentId(sub); // ✅ เก็บลง state
-      }
-    };
-    load();
-  }, []);
-  
-
-  // โหลดรายละเอียดกิจกรรม
-  useEffect(() => {
-    if (!activityId || typeof activityId !== 'string') return;
-
-    const fetchActivity = async () => {
+    (async () => {
       try {
-        const data = await getActivityDetail(activityId);
-        setActivity(data);
-      } catch (err: any) {
-        setError(err.message || 'เกิดข้อผิดพลาด');
+        const a = await getActivityDetail(activityId);
+        setActivity(a);
+        try {
+          const st = await getStudentActivityStatus(studentId, activityId);
+          setJoinStatus(st.status as 0 | 1 | 2 | 3);
+          setConfirmStatus(st.confirmation_status as 0 | 1 | 2);
+        } catch {
+          setJoinStatus(null);
+          setConfirmStatus(null);
+        }
+      } catch (e: any) {
+        setError(e.message || 'โหลดข้อมูลผิดพลาด');
       } finally {
         setLoading(false);
+        setStateLoading(false);
       }
-    };
-
-    fetchActivity();
+    })();
   }, [activityId]);
 
-  // โหลดสถานะการเข้าร่วม
-  useEffect(() => {
-    if (!activityId || typeof activityId !== 'string') return;
-    if (!studentId || typeof studentId !== 'string') return;
-  
-    const fetchStatus = async () => {
-      try {
-        const result = await getStudentActivityStatus(studentId, activityId);
-        if (result) setJoinStatus(result.status);
-      } catch (err) {
-        console.error('Failed to load join status:', err);
-      } finally {
-        setStatusLoading(false);
-      }
-    };
-  
-    fetchStatus();
-  }, [activityId, studentId]); // ✅ ใส่ studentId ด้วย
-  
+  /* utils */
+  const inConfirmWindow = (() => {
+    if (!activity) return false;
+    const now = new Date();
+    const eventDate = new Date(activity.event_date);
+    const openDate = new Date(eventDate);
+    openDate.setDate(
+      eventDate.getDate() - (activity.confirmation_days_before_event || 3),
+    );
+    return now >= openDate && now < eventDate;
+  })();
 
-  // ⏳ กำลังโหลดกิจกรรม
-  if (loading) return <div className="p-6 text-center">กำลังโหลดข้อมูลกิจกรรม...</div>;
-  if (error) return <div className="p-6 text-center text-red-600">⚠ {error}</div>;
-  if (!activity) return null;
+  /* actions */
+  const handleJoin = async () => {
+    await joinActivity(studentId, activityId);
+    setJoinStatus(0);
+  };
+  const handleConfirm = async (ok: boolean) => {
+    await confirmAttendance(studentId, activityId, ok ? 1 : 2);
+    setConfirmStatus(ok ? 1 : 2);
+  };
 
-  const a = activity;
+  /* loading / error */
+  if (loading)
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-gray-600">
+        ⏳ กำลังโหลด…
+      </div>
+    );
+  if (error || !activity)
+    return (
+      <div className="p-6 text-center text-red-600">⚠ {error || 'ไม่พบกิจกรรม'}</div>
+    );
 
+  /* ---------------------------------- ui ---------------------------------- */
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="rounded-2xl border p-8 shadow-sm bg-white">
-        <h1 className="text-2xl font-bold">{a.name}</h1>
-        <h2 className="mt-1 text-base font-semibold">รายละเอียดกิจกรรม</h2>
-
-        <div className="mt-6 flex flex-col md:flex-row md:items-start md:gap-6">
-          <div className="flex-1">
-            <p className="text-sm leading-6 text-gray-700">{a.description}</p>
-          </div>
-          <div className="relative h-52 w-full max-w-sm rounded-2xl bg-gray-100 md:h-40 md:w-80">
-            <Image
-              src="/data-science-and-visualization-with-python.jpg"
-              alt={a.name}
-              fill
-              className="object-cover rounded-2xl"
-            />
+    <div className="mx-auto max-w-4xl space-y-10 p-6">
+      {/* white card (ไม่มีเส้นขอบ) */}
+      <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+        {/* cover */}
+        <div className="relative h-56 w-full">
+          <Image
+            src={
+              activity.cover_image_url ||
+              '/data-science-and-visualization-with-python.jpg'
+            }
+            alt={activity.name}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40 flex flex-col justify-end px-6 pb-6">
+            <h1 className="text-xl font-bold text-white">{activity.name}</h1>
+            <p className="mt-1 line-clamp-2 text-sm text-white/80">
+              {activity.description || '—'}
+            </p>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-6 md:flex-row">
-          <div className="flex-1 rounded-lg bg-gray-100 p-6 text-sm space-y-2">
-            <p>
-              สถานะ:{' '}
-              <span className="font-bold text-green-700">
-                {a.status === 0 ? 'เปิดรับ' : 'ปิด'}
-              </span>
-            </p>
-            <p>
-              จำนวนผู้เข้าร่วม: {a.amount} / {a.max_amount}
-            </p>
-            <p>วัน-เวลาจัด: {formatDateThai(a.event_date)}</p>
-          </div>
+        {/* body */}
+        <div className="space-y-10 p-6">
+          {/* grid: info + schedule */}
+          <section className="grid gap-8 sm:grid-cols-2">
+            {/* info */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">ข้อมูลกิจกรรม</h2>
+              <ul className="space-y-1 text-sm text-gray-700">
+                <li>รายละเอียดเชิงลึก: {activity.details || '—'}</li>
+                <li>
+                  สถานะ:{' '}
+                  <span
+                    className={
+                      activity.status === 0
+                        ? 'text-blue-600'
+                        : activity.status === 3
+                        ? 'text-emerald-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {statusLabel[activity.status]}
+                  </span>
+                </li>
+                <li>
+                  จำนวนผู้เข้าร่วม: {activity.amount}/{activity.max_amount}
+                </li>
+                <li>สถานที่: {activity.location || '—'}</li>
+                <li>เผยแพร่: {activity.is_published ? '✔' : '✘'}</li>
+                <li>สร้างเมื่อ: {formatDateThai(activity.created_at)}</li>
+                <li>อัปเดตล่าสุด: {formatDateThai(activity.updated_at)}</li>
+              </ul>
+            </div>
 
-          <div className="flex-1 rounded-lg bg-gray-100 p-6 text-sm">
-            <p className="font-semibold mb-2">ทักษะที่ได้</p>
+            {/* schedule */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">กำหนดการ</h2>
+              <ul className="space-y-1 text-sm text-gray-700">
+                <li>วันจัด: {formatDateThai(activity.event_date)}</li>
+                <li>
+                  ปิดรับสมัคร:{' '}
+                  {activity.registration_deadline
+                    ? formatDateThai(activity.registration_deadline)
+                    : '—'}
+                </li>
+                <li>ยืนยันล่วงหน้า: {activity.confirmation_days_before_event} วัน</li>
+                <li>
+                  ยืนยันได้ตั้งแต่{' '}
+                  {formatDateThai(
+                    new Date(
+                      new Date(activity.event_date).setDate(
+                        new Date(activity.event_date).getDate() -
+                          (activity.confirmation_days_before_event || 3),
+                      ),
+                    ).toISOString(),
+                  )}{' '}
+                  ถึง {formatDateThai(activity.event_date)}
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          {/* skills */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">ทักษะที่จะได้รับ</h2>
             <ul className="flex flex-wrap gap-2">
-              {a.skills.map((skill, i) => (
+              {activity.skills.map((s: { id: Key | null | undefined; name_th: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; skill_type: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; skill_level: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
                 <li
-                  key={i}
-                  className="rounded bg-slate-200 px-3 py-0.5 text-xs font-medium text-slate-700"
+                  key={s.id}
+                  className="rounded-full bg-slate-200 px-3 py-0.5 text-xs font-medium text-slate-700"
                 >
-                  {skill}
+                  {s.name_th} ({s.skill_type}) – ระดับ {s.skill_level}
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
         </div>
       </div>
 
-      {/* ✅ เงื่อนไขแสดงปุ่มหรือสถานะลงทะเบียน */}
-      {a.status === 0 && (
-        <div className="mt-6 flex justify-end gap-4">
+      {/* action buttons – bottom right (นอกกล่อง) */}
+      {activity.status === 0 && (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-wrap gap-3">
           <button
             onClick={() => router.back()}
-            className="rounded-full bg-gray-200 px-6 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 cursor-pointer"
+            className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 shadow hover:bg-gray-200"
           >
             ย้อนกลับ
           </button>
 
-          {statusLoading ? (
-            <span className="text-sm text-gray-500 px-6 py-2">โปรดรอสักครู่...</span>
-          ) : joinStatus === 0 ? (
-            <span className="rounded-full bg-yellow-100 px-6 py-2 text-sm font-medium text-yellow-700">
-              รอยืนยันการลงทะเบียน
+          {stateLoading ? (
+            <span className="rounded-full bg-gray-100 px-6 py-2 text-sm text-gray-500 shadow">
+              ตรวจสอบสถานะ…
             </span>
-          ) : joinStatus === 1 ? (
-            <span className="rounded-full bg-green-100 px-6 py-2 text-sm font-medium text-green-700">
-              คุณได้ลงทะเบียนแล้ว
+          ) : joinStatus === null ? (
+            <button
+              onClick={handleJoin}
+              className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
+            >
+              ลงทะเบียน
+            </button>
+          ) : joinStatus === 0 ? (
+            <span className="rounded-full bg-yellow-100 px-6 py-2 text-sm font-medium text-yellow-700 shadow">
+              รออนุมัติ
             </span>
           ) : joinStatus === 2 ? (
-            <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700">
-              การลงทะเบียนไม่ผ่านการอนุมัติ
+            <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
+              ไม่ได้รับการอนุมัติ
             </span>
-          ) : joinStatus === 3 ? (
-            <span className="rounded-full bg-gray-200 px-6 py-2 text-sm font-medium text-gray-600">
-              คุณเข้าร่วมกิจกรรมนี้แล้ว
+          ) : joinStatus === 1 && confirmStatus === 0 && inConfirmWindow ? (
+            <>
+              <button
+                onClick={() => handleConfirm(true)}
+                className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700"
+              >
+                ✅ ยืนยัน
+              </button>
+              <button
+                onClick={() => handleConfirm(false)}
+                className="rounded-full bg-red-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
+              >
+                ❌ ยกเลิก
+              </button>
+            </>
+          ) : joinStatus === 1 && confirmStatus === 1 ? (
+            <span className="rounded-full bg-emerald-100 px-6 py-2 text-sm font-medium text-emerald-700 shadow">
+              ยืนยันแล้ว
+            </span>
+          ) : joinStatus === 1 && confirmStatus === 2 ? (
+            <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
+              คุณยกเลิกแล้ว
             </span>
           ) : (
-            <button
-              onClick={async () => {
-                try {
-                  if (!studentId || typeof studentId !== 'string') {
-                    console.warn('❌ ไม่พบ studentId ที่ใช้ได้');
-                    return;
-                  }
-                  await joinActivity(studentId!, activityId as string);
-                  alert('ลงทะเบียนเรียบร้อยแล้ว');
-                  setJoinStatus(0);
-                } catch (err: any) {
-                  alert(err.message || 'ลงทะเบียนไม่สำเร็จ');
-                }
-              }}
-              className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white hover:bg-red-600 cursor-pointer"
-            >
-              ลงทะเบียนเข้าร่วมกิจกรรม
-            </button>
+            <span className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-600 shadow">
+              เข้าร่วมแล้ว
+            </span>
           )}
         </div>
       )}

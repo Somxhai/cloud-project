@@ -1,237 +1,219 @@
+// src/app/(protected)/staff/activity/[activityId]/edit/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getActivityById, updateActivity, updateActivitySkills } from '@/lib/activity';
+import { getActivityById, updateActivity } from '@/lib/activity';
 
-type ActivityStatus = 0 | 1 | 2;
-type SkillForm = {
-  id?: string;
-  name: string;
-  skill_type: 'soft' | 'hard';
+/* ------------------------------------------------------------------ */
+/* helpers                                                            */
+/* ------------------------------------------------------------------ */
+const emptyForm = {
+  name: '',
+  description: '',
+  details: '',
+  event_date: '',
+  registration_deadline: '',
+  location: '',
+  cover_image_url: '',
+  max_amount: 0,
+  status: 0,
+  is_published: false,
 };
 
 export default function EditActivityPage() {
-  const { activityId } = useParams();
+  const { activityId } = useParams() as { activityId: string };
   const router = useRouter();
 
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    status: 0 as ActivityStatus,
-    max_amount: 0,
-    amount: 0,
-    event_date: '',
-  });
-
-  const [skills, setSkills] = useState<SkillForm[]>([]);
+  const [form, setForm] = useState<typeof emptyForm>(emptyForm);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
+  /* ------------------------------------------------------------------ */
+  /* fetch activity detail                                              */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
-    if (typeof activityId !== 'string') return;
-
-    const fetchData = async () => {
+    (async () => {
       try {
-        const activity = await getActivityById(activityId);
+        const a = await getActivityById(activityId);
         setForm({
-          name: activity.name,
-          description: activity.description,
-          status: activity.status,
-          max_amount: activity.max_amount,
-          amount: activity.amount,
-          event_date: activity.event_date.slice(0, 10),
+          name: a.name,
+          description: a.description || '',
+          details: a.details || '',
+          event_date: a.event_date?.slice(0, 10) || '',
+          registration_deadline: a.registration_deadline?.slice(0, 10) || '',
+          location: a.location || '',
+          cover_image_url: a.cover_image_url || '',
+          max_amount: a.max_amount,
+          status: a.status,
+          is_published: a.is_published,
         });
-
-        setSkills(
-          (activity.skills ?? []).map((s: any) => ({
-            id: s.id,
-            name: s.name,
-            skill_type: s.skill_type,
-          }))
-        );
-      } catch (err) {
-        console.error(err);
-        alert('ไม่สามารถโหลดข้อมูลกิจกรรมได้');
+      } catch (e) {
+        alert('โหลดข้อมูลกิจกรรมล้มเหลว');
+        console.error(e);
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
+    })();
   }, [activityId]);
 
+  /* ------------------------------------------------------------------ */
+  /* change handlers                                                    */
+  /* ------------------------------------------------------------------ */
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
-    const { name, value } = e.target;
+    const { name, type, value } = e.target as HTMLInputElement;
+    const checked = (e.target as HTMLInputElement).checked;
     setForm((prev) => ({
       ...prev,
-      [name]: name === 'max_amount' ? Number(value) : value,
+      [name]:
+        type === 'checkbox'
+          ? checked
+          : ['max_amount', 'status'].includes(name)
+          ? Number(value)
+          : value,
     }));
-  };
-
-  const handleSkillChange = (index: number, field: keyof SkillForm, value: string) => {
-    const updated = [...skills];
-    updated[index][field] = value as any;
-    setSkills(updated);
-  };
-
-  const handleDeleteSkill = (index: number) => {
-    const updated = skills.filter((_, i) => i !== index);
-    setSkills(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (typeof activityId !== 'string') return;
-
+    setSaving(true);
     try {
       await updateActivity(activityId, form);
-      await updateActivitySkills(activityId, skills);
-      alert('อัปเดตกิจกรรมเรียบร้อยแล้ว');
+      alert('อัปเดตข้อมูลกิจกรรมสำเร็จ');
       router.back();
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
       alert('ไม่สามารถอัปเดตกิจกรรมได้');
+      console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <div className="p-6 text-center">กำลังโหลดข้อมูล...</div>;
+  /* ------------------------------------------------------------------ */
+  /* tiny input component                                               */
+  /* ------------------------------------------------------------------ */
+  const Field = ({
+    label,
+    name,
+    type = 'text',
+  }: {
+    label: string;
+    name: keyof typeof emptyForm;
+    type?: string;
+  }) => (
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <input
+        type={type}
+        name={name}
+        value={String(form[name] ?? '')}
+        onChange={handleChange}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
+      />
+    </div>
+  );
 
+  /* ------------------------------------------------------------------ */
+  /* ui – loading                                                       */
+  /* ------------------------------------------------------------------ */
+  if (loading) return <div className="p-6 text-center">⏳ กำลังโหลด…</div>;
+
+  /* ------------------------------------------------------------------ */
+  /* ui – main                                                          */
+  /* ------------------------------------------------------------------ */
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center p-6">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-lg">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold">แก้ไขกิจกรรม</h1>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="text-sm text-gray-600 underline"
-          >
-            ← ย้อนกลับ
-          </button>
-        </div>
+    <div className="mx-auto max-w-4xl space-y-10 bg-gray-50 px-6 py-10">
+      {/* header */}
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-800">แก้ไขกิจกรรม</h1>
+        <button onClick={() => router.back()} className="text-sm text-gray-600 underline">
+          ← ย้อนกลับ
+        </button>
+      </header>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium mb-1">ชื่อกิจกรรม</label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="ชื่อกิจกรรม"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">รายละเอียด</label>
+      <form onSubmit={handleSubmit} className="space-y-10">
+        {/* basic */}
+        <section className="rounded-xl bg-white p-6 shadow-sm space-y-6">
+          <h2 className="text-lg font-semibold text-gray-800">ข้อมูลพื้นฐาน</h2>
+          <Field label="ชื่อกิจกรรม" name="name" />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">รายละเอียดสั้น</label>
             <textarea
               name="description"
+              rows={3}
               value={form.description}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-              rows={3}
-              placeholder="รายละเอียดกิจกรรม"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">วันที่จัดกิจกรรม</label>
-            <input
-              type="date"
-              name="event_date"
-              value={form.event_date}
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-gray-700">รายละเอียดเพิ่มเติม</label>
+            <textarea
+              name="details"
+              rows={4}
+              value={form.details}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
             />
           </div>
+          <Field label="รูปภาพปก (URL)" name="cover_image_url" />
+        </section>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">จำนวนผู้เข้าร่วมสูงสุด</label>
-            <input
-              type="number"
-              name="max_amount"
-              value={form.max_amount}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="0"
-            />
+        {/* schedule */}
+        <section className="rounded-xl bg-white p-6 shadow-sm space-y-6">
+          <h2 className="text-lg font-semibold text-gray-800">กำหนดการ & สถานที่</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="วันจัดกิจกรรม" name="event_date" type="date" />
+            <Field label="ปิดรับสมัคร" name="registration_deadline" type="date" />
+            <Field label="สถานที่" name="location" />
+            <Field label="จำนวนผู้เข้าร่วมสูงสุด" name="max_amount" type="number" />
           </div>
+        </section>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">สถานะกิจกรรม</label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-            >
-              <option value={0}>เปิดรับ</option>
-              <option value={1}>ปิดรับ</option>
-              <option value={2}>ยกเลิก</option>
-            </select>
-          </div>
-
-          {/* ---------------- ทักษะ ---------------- */}
-          <div>
-            <label className="block text-sm font-bold mb-1">ทักษะที่ได้รับ</label>
-            <div className="space-y-3 bg-gray-50 rounded-md p-3">
-              {skills.map((s, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">{index + 1}</span>
-                  <input
-                    type="text"
-                    value={s.name}
-                    onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
-                    className="flex-1 border rounded px-2 py-1 text-sm"
-                    placeholder="ชื่อทักษะ"
-                  />
-                  <select
-                    value={s.skill_type}
-                    onChange={(e) => handleSkillChange(index, 'skill_type', e.target.value)}
-                    className="border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="soft">Soft</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteSkill(index)}
-                    className="text-xs text-red-500 hover:underline"
-                  >
-                    ลบ
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setSkills([...skills, { name: '', skill_type: 'hard' }])}
-                className="text-sm text-center text-blue-600 underline"
+        {/* status */}
+        <section className="rounded-xl bg-white p-6 shadow-sm space-y-6">
+          <h2 className="text-lg font-semibold text-gray-800">สถานะ & การเผยแพร่</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700">สถานะกิจกรรม</label>
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
               >
-                + เพิ่มทักษะ
-              </button>
+                <option value={0}>เปิดรับสมัคร</option>
+                <option value={1}>ปิดรับสมัคร</option>
+                <option value={2}>ยกเลิก</option>
+                <option value={3}>เสร็จสิ้น</option>
+              </select>
             </div>
+            <label className="mt-7 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_published"
+                checked={form.is_published}
+                onChange={handleChange}
+                className="h-4 w-4 accent-blue-600"
+              />
+              เผยแพร่
+            </label>
           </div>
+        </section>
 
-          {/* ---------------- ปุ่ม ---------------- */}
-          <div className="flex justify-between gap-2 pt-4">
-            <button
-              type="submit"
-              className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded text-sm font-medium"
-            >
-              บันทึก
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="w-full bg-gray-200 hover:bg-gray-300 py-2 rounded text-sm font-medium"
-            >
-              ยกเลิก
-            </button>
-          </div>
-        </form>
-      </div>
+        {/* submit */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-full bg-blue-600 px-8 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 disabled:opacity-60"
+          >
+            {saving ? 'กำลังบันทึก…' : 'บันทึกการเปลี่ยนแปลง'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+/*
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -26,5 +27,13 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   if (loading) return <p className="p-6">กำลังตรวจสอบสิทธิ์...</p>;
 
+  return <>{children}</>;
+}
+*/
+
+
+// src/app/staff/skill/layout.tsx
+
+export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

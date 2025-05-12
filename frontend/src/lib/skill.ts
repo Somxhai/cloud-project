@@ -3,7 +3,7 @@ import type { Skill } from "@/types/models";
 import { fetchAuthSession } from "@aws-amplify/auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
+/*
 async function getAuthHeaders() {
   const session = await fetchAuthSession();
   const idToken = session.tokens?.idToken?.toString();
@@ -13,72 +13,59 @@ async function getAuthHeaders() {
     "Content-Type": "application/json",
   };
 }
+*/
+// src/lib/skill.ts
 
-/**
- * GET /skills
- * ดึงทักษะทั้งหมด
- */
+
 export async function getAllSkills(): Promise<Skill[]> {
-  const res = await fetch(`${BASE_URL}/skill`, {
-    cache: "no-store",
-    headers: await getAuthHeaders(), // ✅ แนบ token
-  });
-  if (!res.ok) throw new Error("ไม่สามารถโหลดรายการทักษะได้");
-  return res.json();
+  const res = await fetch(`${BASE_URL}/skill`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('โหลดทักษะไม่สำเร็จ');
+  return await res.json();
 }
 
-/**
- * POST /skills
- * สร้างทักษะใหม่
- */
-export async function createSkill(skill: Skill): Promise<Skill> {
+
+export async function createSkill(payload: {
+  name_th: string;
+  name_en: string;
+  description: string;
+  skill_type: 'soft' | 'hard';
+  is_active: boolean;
+}): Promise<Skill> {
   const res = await fetch(`${BASE_URL}/skill`, {
-    method: "POST",
-    headers: await getAuthHeaders(), // ✅ แนบ token
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error('สร้างทักษะไม่สำเร็จ');
+  return await res.json();
+}
+
+
+export async function updateSkill(skill: Skill): Promise<Skill> {
+  const res = await fetch(`${BASE_URL}/skill/${skill.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(skill),
   });
-
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || "ไม่สามารถสร้างทักษะได้");
-  }
-
-  return res.json();
+  if (!res.ok) throw new Error('อัปเดตทักษะไม่สำเร็จ');
+  return await res.json();
 }
 
-/**
- * DELETE /skills/:id
- * ลบทักษะตาม ID
- */
-export async function deleteSkill(skillId: string): Promise<Skill> {
-  const res = await fetch(`${BASE_URL}/skill/${skillId}`, {
-    method: "DELETE",
-    headers: await getAuthHeaders(), // ✅ แนบ token
+export async function deleteSkill(id: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/skill/${id}`, {
+    method: 'DELETE',
   });
-
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || "ไม่สามารถลบทักษะได้");
-  }
-
-  return res.json();
+  if (!res.ok) throw new Error('ลบทักษะไม่สำเร็จ');
 }
 
-/**
- * POST /skills/add-to-student
- * เพิ่มทักษะให้กับนักศึกษา
- */
-export async function addSkillToStudent(skillId: string, studentId: string): Promise<Skill[]> {
-  const res = await fetch(`${BASE_URL}/skill/add-to-student`, {
-    method: "POST",
-    headers: await getAuthHeaders(), // ✅ แนบ token
-    body: JSON.stringify({ skillId, studentId }),
+
+
+export async function recalculateStudentSkills(studentId: string) {
+  const res = await fetch(`${BASE_URL}/skill/recalculate/${studentId}`, {
+    method: 'POST',
   });
 
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || "ไม่สามารถเพิ่มทักษะให้นักศึกษาได้");
-  }
-
-  return res.json();
+  if (!res.ok) throw new Error('ไม่สามารถคำนวณทักษะได้');
+  return await res.json();
 }

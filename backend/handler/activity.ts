@@ -1,101 +1,91 @@
-import { Hono } from "hono";
-import {
-  createActivity,
-  deleteActivity,
-  getAllActivity,
-  getActivityById,
-  updateActivity,
-  // เพิ่มฟังก์ชันใหม่
-  getActivityWithSkills,
+import { Hono } from 'hono';
+import { tryCatchService } from '../lib/utils.ts';
+import { Activity, ActivityEvaluation } from '../type/app.ts';
+import { UUIDTypes } from '../lib/uuid.ts';
+import { createActivity,addSkillsToActivity,getAllActivitiesWithSkills,getActivityById, getActivityParticipants,
+  getActivitySkills,
+  removeSkillFromActivity,
+  getActivityEvaluations,
+  updateParticipantStatus,
+  updateActivityById,
   getOpenActivitiesWithSkills,
-  getAllActivitiesWithSkills,
-  getParticipantsByActivityId,
-  updateActivityStatus,
-  upsertSkillsToActivity,
-  recalculateAllStudentSkills,
-  recalculateAllActivityAmount
-} from "../database/service/activity.ts";
-import { cognitoMiddleware } from "../middleware.ts";
-import { Activity } from "../type/app.ts";
+  getActivityWithSkills,
+  submitActivityEvaluation,
+  updateConfirmationDays,
+  confirmStudentSkillsLog
+ } from '../database/service/activity.ts'; 
 
-export const activityApp = new Hono<{
-  Variables: { userSub: string | null };
-}>();
+export const activityApp = new Hono();
 
-// Public route: Get all activities
-activityApp.get("/", async (c) => {
-  try {
-    const activities = await getAllActivity();
-    return c.json(activities, 200);
-  } catch (err) {
-    console.error(err);
-    return c.text("Internal server error", 500);
-  }
+activityApp.get('/', (c) => {
+  return tryCatchService(() => {
+  return Promise.resolve(c.json({ message: 'GET /activity' }));
+});
+
 });
 
 
 
-// Apply Cognito auth to protected routes
-activityApp.use(cognitoMiddleware);
-
-// Create activity
 activityApp.post("/", async (c) => {
+  const body = await c.req.json<Activity>();
+
+  if (
+    !body.name ||
+    body.status === undefined ||
+    body.max_amount === undefined ||
+    !body.event_date
+  )
+    return c.text("Missing required fields", 400);
+
   try {
-    const activity: Activity = await c.req.json();
-
-    // ตรวจสอบข้อมูลที่จำเป็น
-    if (
-      !activity.name ||
-      !activity.description ||
-      activity.status === undefined ||
-      activity.max_amount === undefined ||
-      !activity.event_date
-    ) {
-      return c.text("All fields are required", 400);
-    }
-
-    const created: Activity = await createActivity(activity);
+    const created = await createActivity(body);
     return c.json(created, 201);
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("All fields are required")) {
-      return c.text(err.message, 400);
+  } catch (err) {
+    console.error(err);
+    return c.text("Internal server error", 500);
+  }
+});
+
+
+activityApp.put('/:activityId/skill-ids', async (c) => {
+  const activityId = c.req.param('activityId');
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(activityId)) return c.text('Invalid activityId', 400);
+
+  const body = await c.req.json();
+  if (!Array.isArray(body))
+    return c.text('Request body should be an array of skills', 400);
+
+  // Optional: validate each skill object
+  for (const skill of body) {
+    if (
+      typeof skill.skill_id !== 'string' ||
+      typeof skill.skill_level !== 'number'
+    ) {
+      return c.text('Invalid skill format', 400);
     }
-
-    console.error("Failed to create activity:", err);
-    return c.text("Internal server error", 500);
   }
-});
 
-// Update activity
-activityApp.put("/:activityId", async (c) => {
-  const activityId = c.req.param("activityId");
-  if (!activityId) {
-    return c.text("Missing activity ID", 400);
-  }
   try {
-    const activity: Activity = await c.req.json();
-    const rows = await updateActivity(activityId, activity);
-    const updated = rows[0];
-    return c.json(updated, 200);
+    await addSkillsToActivity(activityId as `${string}-${string}-${string}-${string}-${string}`, body);
+    return c.json({ message: 'Skills successfully added to activity' });
   } catch (err) {
     console.error(err);
-    return c.text("Internal server error", 500);
+    return c.text('Internal server error', 500);
   }
 });
 
-// Delete activity
-activityApp.delete("/:activityId", async (c) => {
-  const activityId = c.req.param("activityId");
-  if (!activityId) {
-    return c.text("Missing activity ID", 400);
-  }
+
+
+
+activityApp.get('/with-skills', async (c) => {
   try {
-    const rows = await deleteActivity(activityId);
-    const deleted = rows[0];
-    return c.json(deleted, 200);
+    const list = await getAllActivitiesWithSkills();
+    return c.json(list);
   } catch (err) {
     console.error(err);
-    return c.text("Internal server error", 500);
+    return c.text('Internal server error', 500);
   }
 });
 
@@ -103,102 +93,160 @@ activityApp.delete("/:activityId", async (c) => {
 
 
 
-// New
-// 1. Get full activity detail with skills
+
+activityApp.get('/:id/participants', async (c) => {
+  const id = c.req.param('id');
+  const list = await getActivityParticipants(id);
+  return c.json(list);
+});
+
+
+activityApp.get('/:id/skills', async (c) => {
+  const id = c.req.param('id');
+  const skills = await getActivitySkills(id);
+  return c.json(skills);
+});
+
+
+activityApp.delete('/:id/skill/:skillId', async (c) => {
+  const { id, skillId } = c.req.param();
+  await removeSkillFromActivity(id, skillId);
+  return c.json({ success: true });
+});
+
+
+activityApp.get('/:id/evaluations', async (c) => {
+  const id = c.req.param('id');
+  const evaluations = await getActivityEvaluations(id);
+  return c.json(evaluations);
+});
+
+activityApp.put('/student-activity/:id/status', async (c) => {
+  const id = c.req.param('id');
+  const { status } = await c.req.json();
+
+  if (![0, 1, 2, 3].includes(status)) {
+    return c.text('Invalid status value', 400);
+  }
+
+  try {
+    await updateParticipantStatus(id, status);
+    return c.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return c.text('Internal server error', 500);
+  }
+});
+
+
+
+activityApp.put('/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json();
+
+  try {
+    const updated = await updateActivityById(id, body);
+    return c.json(updated);
+  } catch (err) {
+    console.error(err);
+    return c.text('Failed to update activity', 500);
+  }
+});
+
+
+// 
+
+activityApp.get('/open', async (c) => {
+  try {
+    const activities = await getOpenActivitiesWithSkills();
+    return c.json(activities);
+  } catch (err) {
+    console.error('Failed to get open activities:', err);
+    return c.text('Internal Server Error', 500);
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+activityApp.get('/:id', async (c) => {
+  const id = c.req.param('id');
+  const data = await getActivityById(id);
+  return c.json(data);
+});
+
+
 activityApp.get("/detail/:activityId", async (c) => {
   const id = c.req.param("activityId");
-  const result = await getActivityWithSkills(id);
-  return c.json(result);
-});
-
-// 2. Get open activities with skills
-activityApp.get("/open", async (c) => {
-  const result = await getOpenActivitiesWithSkills();
-  return c.json(result);
-});
-
-// 3. Get all activities with skills
-activityApp.get("/with-skills", async (c) => {
-  const result = await getAllActivitiesWithSkills();
-  return c.json(result);
-});
-
-// 4. Get participants of an activity
-activityApp.get("/participants/:activityId", async (c) => {
-  const id = c.req.param("activityId");
-  const result = await getParticipantsByActivityId(id);
-  return c.json(result);
-});
-
-// 5. Update activity status
-activityApp.put("/status/:activityId", async (c) => {
-  const id = c.req.param("activityId");
-  const { status } = await c.req.json();
-  const result = await updateActivityStatus(id, status);
-  return c.json(result);
-});
-
-
-
-
-// Public route: Get activity by id
-activityApp.get("/:activityId", async (c) => {
-  const activityId = c.req.param("activityId");
-  if (!activityId) {
-    return c.text("Missing activity ID", 400);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    return c.text('Invalid activityId format', 400);
   }
+  const data = await getActivityWithSkills(id as `${string}-${string}-${string}-${string}-${string}`);
+  return c.json(data);
+});
+
+
+
+
+
+
+
+
+activityApp.post('/evaluation', async (c) => {
+  const body = await c.req.json();
+  const data = body as Omit<ActivityEvaluation, 'id' | 'submitted_at'>;
+
   try {
-    const activity = await getActivityById(activityId);
-    if (!activity) {
-      return c.text("Activity not found", 404);
-    }
-    return c.json(activity, 200);
+    await submitActivityEvaluation(data);
+    return c.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return c.text("Internal server error", 500);
+    console.error('❌ Failed to submit evaluation:', err);
+    return c.json({ error: 'ไม่สามารถบันทึกแบบประเมินได้' }, 500);
   }
 });
 
 
 
-// 🔽 เพิ่มท้ายไฟล์ หรือใต้ PUT /status/:activityId ก็ได้
-activityApp.put("/:activityId/skills", async (c) => {
-  const activityId = c.req.param("activityId");
+activityApp.put('/:id/confirm-days', async (c) => {
+  const activityId = c.req.param('id');
+  const { days } = await c.req.json();
 
-  const skills: { name: string; skill_type: string }[] = await c.req.json();
+  if (typeof days !== 'number' || days < 0) {
+    return c.text('Invalid confirmation day value', 400);
+  }
+
+  await updateConfirmationDays(activityId as UUIDTypes, days);
+  return c.json({ success: true });
+});
+
+
+activityApp.post('/:activityId/confirm-skills/:studentId', async (c) => {
+  const activityId = c.req.param('activityId');
+  const studentId = c.req.param('studentId');
+  const skills = await c.req.json();
 
   if (!Array.isArray(skills)) {
-    return c.text("Invalid skill list", 400);
+    return c.text('Invalid skills payload', 400);
   }
 
-  try {
-    await upsertSkillsToActivity(activityId, skills);
-    return c.json({ message: "Skills updated successfully" });
-  } catch (err) {
-    console.error(err);
-    return c.text("Internal server error", 500);
-  }
+  await confirmStudentSkillsLog(studentId as UUIDTypes, activityId as UUIDTypes, skills);
+  return c.json({ success: true });
 });
-
-activityApp.post("/recalculate-skill", async (c) => {
-  try {
-    await recalculateAllStudentSkills();
-    return c.json({ message: "Recalculated student skills successfully" });
-  } catch (err) {
-    console.error(err);
-    return c.text("Failed to recalculate skills", 500);
-  }
-});
-
-
-activityApp.post("/recalculate-amount", async (c) => {
-  try {
-    await recalculateAllActivityAmount();
-    return c.json({ message: "Recalculated activity amounts successfully" });
-  } catch (err) {
-    console.error(err);
-    return c.text("Failed to recalculate activity amounts", 500);
-  }
-});
-
-

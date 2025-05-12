@@ -28,13 +28,15 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="th" className={notoThai.variable}>
-      <body className="font-sans antialiased bg-gray-100 text-gray-800">
+    <html lang="th" className={`${notoThai.variable} bg-[#f5f5f5] min-h-screen`} >
+      <body className="font-sans antialiased bg-[#f5f5f5] text-gray-800">
         {/* แสดง Navbar เฉพาะบางหน้า */}
         {shouldShowNavbar && <MainNavbar />}
 
-        {/* เนื้อหาเพจ */}
-        {children}
+        {/* เนื้อหาเพจพร้อม padding ด้านบน */}
+        <div className={shouldShowNavbar ? 'pt-[100px] bg-[#f5f5f5]' : ''}>
+          {children}
+        </div>
       </body>
     </html>
   );

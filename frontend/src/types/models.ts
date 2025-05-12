@@ -37,18 +37,25 @@ export const ActivityStatusLabel = {
   2: 'cancelled',
 } as const;
 
-export interface Activity {
-  id?: UUID;
+
+export type Activity = {
+  id: string;
   name: string;
   description: string;
-  status: ActivityStatus;
+  details?: string;
+  status: number; // 0=เปิดรับ, 1=ปิดรับ, 2=ยกเลิก, 3=เสร็จสิ้น
   amount: number;
   max_amount: number;
-  event_date: string;
-  created_at?: string;
-  updated_at?: string;
-  skills?: string[]; // Add the skills property as an optional array of strings
-}
+  event_date: string; // ISO string
+  registration_deadline?: string;
+  location?: string;
+  cover_image_url?: string;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  confirmation_days_before_event: number;
+};
+
 
 // ------------------ StudentActivity (Join) ------------------
 export type StudentActivityStatus = 0 | 1 | 2 | 3;
@@ -71,20 +78,31 @@ export interface StudentActivity {
 // ------------------ Skill ------------------
 export type SkillType = 'soft' | 'hard';
 
-export interface Skill {
-  id?: UUID;
-  name: string;
-  skill_type: SkillType;
-  created_at: string;
-  updated_at: string;
-}
+export type Skill = {
+  id: string;
+  name_th: string;
+  name_en: string;
+  description?: string;
+  skill_type: 'soft' | 'hard';
+  icon_url?: string | null;
+  is_active: boolean;
+};
+
 
 // ------------------ ActivitySkill (Join) ------------------
-export interface ActivitySkill {
-  id?: UUID;
-  activity_id: UUID;
-  skill_id: UUID;
-}
+export type ActivitySkill = {
+  id: string;
+  activity_id: string;
+  skill_id: string;
+
+  skill_level?: number; // 1–5
+  note?: string;
+
+  name_th: string;
+  name_en: string;
+  skill_type: 'soft' | 'hard';
+};
+
 
 // ------------------ ProfessorStudent (Join) ------------------
 export interface ProfessorStudent {
@@ -104,18 +122,36 @@ export interface StudentSkill {
 
 export interface ActivityWithSkills extends Omit<Activity, 'id'> {
   id: UUID;
-  skills: string[]; // เช่น ['Python', 'Teamwork']
+  skills: SkillWithLevel[];
 }
 
-export interface StudentActivityWithStudentInfo extends StudentActivity {
+export type StudentActivityWithStudentInfo = {
+  id: string;
+  student_id: string;
+  activity_id: string;
+  status: number;
+  confirmation_status: number;
+  confirmed_at: string | null;
+  evaluation_status: number;
+  attended: boolean;
+  feedback_submitted: boolean;
+  participated_at: string;
+  verified_by: string | null;
+  verified_at: string | null;
+  completed_at: string | null;
+
+  // แบนราบ ไม่ใช่ nested
   full_name: string;
   student_code: string;
   faculty: string;
   major: string;
   year: number;
+
   activity_name: string;
   event_date: string;
-}
+};
+
+
 
 export interface StudentWithSkills {
   id: UUID;
@@ -144,4 +180,108 @@ export type ProfessorDetail = {
   full_name: string;
   created_at: string;
   updated_at: string;
+};
+
+
+export type Curriculum = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
+
+export type CurriculumSkillInput = {
+  skill_id: string;
+  required_level: number;
+};
+
+
+export type CurriculumDetail = Curriculum & {
+  skills: (Skill & { required_level: number })[];
+  students: { id: string; full_name: string }[];
+  progress_percentage: number;
+  top_missing_skills: { skill_id: string; name_th: string; count: number }[];
+};
+
+
+export type ActivityEvaluation = {
+  id: string;
+  student_id: string;
+  activity_id: string;
+
+  score_venue: number;
+  score_speaker: number;
+  score_interest: number;
+  score_content: number;
+  score_applicability: number;
+  score_overall: number;
+
+  comment?: string;
+  suggestions?: string;
+  is_anonymous: boolean;
+  submitted_at: string; // ISO 8601 (from TIMESTAMPTZ)
+};
+
+
+export type ActivitySkillFromApi = {
+  id: string;             // ← ของจริงที่ API ส่งมา
+  skill_id?: string;       // เผื่อ alias ในอนาคต
+  skill_level: number | null;
+  note: string | null;
+};
+
+
+
+
+export type CreateStudentInput = {
+  user_id: string;
+  student_code: string;
+  full_name: string;
+  faculty: string;
+  major: string;
+  year: number;
+
+  curriculum_id?: string | null;
+  profile_picture_url?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  gender?: 'male' | 'female' | 'other' | null;
+  birth_date?: string | null; // Format: 'YYYY-MM-DD'
+  line_id?: string | null;
+  student_status: 'active' | 'graduated' | 'suspended';
+  is_active: boolean;
+};
+
+
+
+export type SkillWithLevel = Skill & {
+  skill_level: number;
+  note?: string | null;
+};
+
+
+
+export type ActivityWithFullSkills = {
+  id: string;
+  name: string;
+  description?: string;
+  details?: string;
+  status: number;
+  amount: number;
+  max_amount: number;
+  event_date: string;
+  registration_deadline?: string;
+  location?: string;
+  cover_image_url?: string;
+  is_published: boolean;
+    created_at: string;
+  updated_at: string;
+  confirmation_days_before_event: number;
+  skills: SkillWithLevel[];
+};
+
+
+export type StudentActivityWithActivityInfo = StudentActivity & {
+  activity_name: string;
+  event_date: string;
 };

@@ -1,211 +1,282 @@
+// src/app/(protected)/student/profile/[studentId]/page.tsx
 'use client';
 
-import '@/lib/amplifyConfig';
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
-import { fetchAuthSession, getCurrentUser } from '@aws-amplify/auth';
-import { getStudentFullDetail, getCompletedActivitiesWithSkills } from "@/lib/student";
-import { formatDateThai } from '@/lib/utils/date';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Image from 'next/image';
+import {
+  getStudentFullDetail,
+  getCompletedActivitiesWithSkills,
+} from '@/lib/student';
+import { formatDateThaiA } from '@/lib/utils/date';
 
+const PER_PAGE = 4;
 
-const ITEMS_PER_PAGE = 3;
+/** utility: "foo:3" ➜ { name:"foo",count:3 } */
+const parseSkills = (arr: string[] | null | undefined) =>
+  arr?.map((t) => {
+    const [name, c] = t.split(':');
+    return { name, count: Number(c || 0) };
+  }) || [];
 
-export default function MyProfile() {
-  function parseSkills(skills: string[]): { name: string; count: number }[] {
-    return skills.map(skill => {
-      const [rawName, rawCount] = skill.split(':');
-      const name = rawName.trim();
-      const count = parseInt(rawCount?.trim() || '0', 10);
-      return { name, count };
-    });
-  }
-
-  
-  const { studentId } = useParams();
-  const router = useRouter();
-
-  const [currentPage, setCurrentPage] = useState(1);
+export default function StudentProfilePage() {
+  /* ------------------------------------------------------------------ */
+  /* params & state                                                     */
+  /* ------------------------------------------------------------------ */
+  const { studentId } = useParams() as { studentId: string };
   const [student, setStudent] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [unauthorized, setUnauthorized] = useState(false);
+  const [page, setPage] = useState(1);
 
+  /* ------------------------------------------------------------------ */
+  /* fetch                                                              */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
-    const verifyAccessAndFetch = async () => {
+    if (!studentId) return;
+    (async () => {
       try {
-        await getCurrentUser();
-        const session = await fetchAuthSession();
-        const rawGroups = session.tokens?.idToken?.payload['cognito:groups'];
-        console.log("👀 Token Payload:", session.tokens?.idToken?.payload);
-        const groups = Array.isArray(rawGroups)
-          ? rawGroups
-          : typeof rawGroups === 'string'
-            ? [rawGroups]
-            : [];
-        
-        if (!groups.includes('student') && !groups.includes('professor')) {
-          setUnauthorized(true);
-          return;
-        }
-        
-
-        if (!studentId || typeof studentId !== "string") return;
-
-        const stu = await getStudentFullDetail(studentId);
-        const acts = await getCompletedActivitiesWithSkills(studentId);
+        const [stu, acts] = await Promise.all([
+          getStudentFullDetail(studentId),
+          getCompletedActivitiesWithSkills(studentId),
+        ]);
         setStudent(stu);
         setActivities(acts);
-      } catch (err) {
-        console.error("Auth error or fetch failed:", err);
-        setUnauthorized(true);
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        console.error(e);
       } finally {
         setLoading(false);
       }
-    };
-
-    verifyAccessAndFetch();
+    })();
   }, [studentId]);
 
-  if (loading) return <p className="p-6">กำลังโหลดข้อมูล...</p>;
-  if (unauthorized) return <p className="p-6 text-red-600">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>;
-  if (!student) return null;
+  /* ------------------------------------------------------------------ */
+  /* derived                                                            */
+  /* ------------------------------------------------------------------ */
+  const softSkills = parseSkills(student?.Skill_S);
+  const hardSkills = parseSkills(student?.Skill_H);
 
-  const totalPages = Math.ceil(activities.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentItems = activities.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  const parsedSoftSkills = parseSkills(student.Skill_S);
-  const parsedHardSkills = parseSkills(student.Skill_H);
-  
+  const totalPages = Math.ceil(activities.length / PER_PAGE);
+  const showActs = activities.slice(
+    (page - 1) * PER_PAGE,
+    page * PER_PAGE,
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* ui – loading / error                                               */
+  /* ------------------------------------------------------------------ */
+  if (loading) return <div className="p-6 text-center">⏳ กำลังโหลด…</div>;
+  if (!student)
+    return <div className="p-6 text-center text-red-600">ไม่พบข้อมูลนักศึกษา</div>;
+
+  /* ------------------------------------------------------------------ */
+  /* ui – main                                                          */
+  /* ------------------------------------------------------------------ */
   return (
-    <div className="min-h-screen font-sans bg-gray-50 px-6 py-10 sm:px-10 md:px-20 lg:px-32">
-      <h1 className="text-4xl font-bold text-left">โปรไฟล์</h1>
+    <div className="px-6 py-10 lg:px-32">
+      {/* headline ----------------------------------------------------- */}
+      <header>
+        <h1 className="text-4xl font-bold text-gray-800">โปรไฟล์</h1>
+      </header>
 
-{/* Student Info */}
-<section className="mt-10 space-y-6">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    
-    {/* ข้อมูลส่วนตัว */}
-    <div className="bg-gray-50 p-6 rounded-xl shadow-sm">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">ข้อมูลส่วนตัว</h2>
-      <div className="space-y-1 text-sm text-gray-800">
-        <p><b>ชื่อ-นามสกุล:</b> {student.full_name}</p>
-        <p><b>รหัสนักศึกษา:</b> {student.student_code}</p>
-        <p><b>อาจารย์ที่ปรึกษา:</b> {student.professor_name}</p>
-        <p><b>สาขาวิชา:</b> {student.major}</p>
-        <p><b>คณะ:</b> {student.faculty}</p>
-      </div>
-    </div>
+      {/* section: basic info + skills -------------------------------- */}
+      <section className="mt-10 grid gap-8 md:grid-cols-2">
+        {/* info ------------------------------------------------------ */}
+<article className="rounded-2xl bg-white/90 p-6 shadow">
+  <h2 className="mb-6 text-lg font-bold text-gray-800">ข้อมูลนักศึกษา</h2>
 
-    {/* ทักษะ */}
-    <div className="bg-gray-50 p-6 rounded-xl shadow-sm">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">ทักษะที่มี</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-
-        {/* Soft Skills */}
-        <div>
-          <h3 className="text-base font-semibold text-gray-700">Soft Skills</h3>
-          <p className="text-sm text-gray-500 mb-2">ทักษะทางอารมณ์และสังคม</p>
-          <ul className="space-y-1 text-sm text-gray-700">
-          {parsedSoftSkills.map((s, idx) => (
-            <li key={idx} className="flex justify-between items-center">
-              <span>{s.name}</span>
-              <span className="bg-gray-300 text-xs px-2 py-0.5 rounded-full">{s.count}</span>
-            </li>
-          ))}
-
-          </ul>
+  <div className="grid gap-8 md:grid-cols-3">
+    {/* ───── หมวดพื้นฐาน ───── */}
+    <section className="space-y-3">
+      <h3 className="text-sm font-semibold text-gray-600">พื้นฐาน</h3>
+      {[
+        ['ชื่อ-นามสกุล', student.full_name],
+        ['รหัสนักศึกษา', student.student_code],
+        ['วันเกิด', formatDateThaiA(student.birth_date || '—')],
+        ['สถานะ', student.student_status],
+      ].map(([label, value]) => (
+        <div key={label}>
+          <dt className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+            {label}
+          </dt>
+          <dd className="text-sm text-gray-800">{value}</dd>
         </div>
-          
-        {/* Hard Skills */}
-        <div className="sm:border-l sm:border-gray-300 sm:pl-6">
-          <h3 className="text-base font-semibold text-gray-700">Hard Skills</h3>
-          <p className="text-sm text-gray-500 mb-2">ทักษะทางเทคนิค</p>
-          <ul className="space-y-1 text-sm text-gray-700">
-          {parsedHardSkills.map((s, idx) => (
-            <li key={idx} className="flex justify-between items-center">
-              <span>{s.name}</span>
-              <span className="bg-gray-300 text-xs px-2 py-0.5 rounded-full">{s.count}</span>
-            </li>
-          ))}
-          </ul>
+      ))}
+    </section>
+
+    {/* ───── หมวดการติดต่อ ───── */}
+    <section className="space-y-3">
+      <h3 className="text-sm font-semibold text-gray-600">การติดต่อ</h3>
+      {[
+        ['อีเมล', student.email],
+        ['เบอร์โทร', student.phone],
+        ['LINE ID', student.line_id || '—'],
+      ].map(([label, value]) => (
+        <div key={label}>
+          <dt className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+            {label}
+          </dt>
+          <dd className="text-sm text-gray-800 break-words">{value}</dd>
         </div>
+      ))}
+    </section>
 
-      </div>
-    </div>
-
+    {/* ───── หมวดการศึกษา ───── */}
+    <section className="space-y-3">
+      <h3 className="text-sm font-semibold text-gray-600">การศึกษา</h3>
+      {[
+        ['หลักสูตร', student.curriculum_name],
+        ['คณะ', student.faculty],
+        ['สาขา', student.major],
+        ['ชั้นปี', student.year],
+        ['ที่ปรึกษา', student.professor_name || '—'],
+      ].map(([label, value]) => (
+        <div key={label}>
+          <dt className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+            {label}
+          </dt>
+          <dd className="text-sm text-gray-800">{value}</dd>
+        </div>
+      ))}
+    </section>
   </div>
-</section>
+</article>
 
 
 
+        {/* skills ---------------------------------------------------- */}
+        <article className="rounded-2xl bg-white/90 p-6 shadow">
+          <h2 className="mb-4 text-lg font-bold text-gray-800">ทักษะที่มี</h2>
 
-{/* Activity Cards */}
-<section className="space-y-6 mt-12">
-  <h2 className="text-2xl font-semibold text-gray-800">กิจกรรมที่เคยเข้าร่วม</h2>
-  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-  {currentItems.map((activity) => (
-    <div
-      key={activity.id}
-      className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100"
-    >
-      {/* รูปภาพ 16:9 */}
-      <div className="relative w-full aspect-[16/9] bg-gray-100">
-        <Image
-          src="/data-science-and-visualization-with-python.jpg"
-          alt={activity.name}
-          fill
-          className="object-cover"
-        />
-      </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* soft */}
+            <div>
+              <h3 className="font-semibold text-gray-700">
+                ทักษะด้าน Soft&nbsp;(Soft Skills)
+              </h3>
+              <p className="mb-2 text-xs text-gray-500">
+                ทักษะทางอารมณ์และสังคม
+              </p>
+              {softSkills.length ? (
+                <ul className="space-y-1 text-sm">
+                  {softSkills.map((s) => (
+                    <li
+                      key={s.name}
+                      className="flex items-center justify-between rounded-lg bg-gray-100 px-2 py-0.5"
+                    >
+                      <span>{s.name}</span>
+                      <span className="rounded-full bg-gray-300 px-2 text-xs font-medium">
+                        {s.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="italic text-gray-400">—</p>
+              )}
+            </div>
 
-      {/* ข้อมูลกิจกรรม */}
-      <div className="p-4 space-y-2">
-        <h3 className="text-base font-semibold text-gray-800">{activity.name}</h3>
-        <p className="text-sm text-gray-600">วัน-เวลาที่เข้าร่วม: {formatDateThai(activity.event_date)}</p>
-        <p className="text-sm font-medium text-gray-700">ทักษะที่ได้รับ:</p>
-        <ul className="flex flex-wrap gap-2 mt-1">
-          {activity.skills.map((s: string, idx: number) => {
-            return (
-              <li
-                key={idx}
-                className="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-md font-medium"
-              >
-                {s}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </div>
-  ))}
-</div>
+            {/* hard */}
+            <div>
+              <h3 className="font-semibold text-gray-700">
+                ทักษะด้าน Hard&nbsp;(Hard Skills)
+              </h3>
+              <p className="mb-2 text-xs text-gray-500">ทักษะทางเทคนิค</p>
+              {hardSkills.length ? (
+                <ul className="space-y-1 text-sm">
+                  {hardSkills.map((s) => (
+                    <li
+                      key={s.name}
+                      className="flex items-center justify-between rounded-lg bg-gray-100 px-2 py-0.5"
+                    >
+                      <span>{s.name}</span>
+                      <span className="rounded-full bg-gray-300 px-2 text-xs font-medium">
+                        {s.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="italic text-gray-400">—</p>
+              )}
+            </div>
+          </div>
+        </article>
+      </section>
 
+      {/* section: activities ---------------------------------------- */}
+      <section className="mt-14">
+        <h2 className="mb-6 text-2xl font-semibold text-gray-800">
+          กิจกรรมที่เคยเข้าร่วม
+        </h2>
 
-  {/* Pagination */}
-  {totalPages > 1 && (
-    <div className="flex justify-center mt-6 space-x-2">
-      {Array.from({ length: totalPages }).map((_, idx) => {
-        const page = idx + 1;
-        return (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`px-4 py-1.5 text-sm rounded-full transition ${
-              currentPage === page
-                ? "bg-gray-900 text-white"
-                : "bg-white text-gray-800 border border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            {page}
-          </button>
-        );
-      })}
-    </div>
-  )}
-</section>
+        {activities.length === 0 ? (
+          <p className="text-gray-500">ยังไม่มีกิจกรรมที่เสร็จสิ้น</p>
+        ) : (
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {showActs.map((act) => (
+                <article
+                  key={act.id}
+                  className="overflow-hidden rounded-2xl bg-white shadow"
+                >
+                  <div className="relative aspect-[16/9]">
+                    <Image
+                      src={
+                        act.cover_image_url ||
+                        '/data-science-and-visualization-with-python.jpg'
+                      }
+                      alt={act.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="space-y-2 p-4">
+                    <h3 className="line-clamp-2 text-sm font-semibold text-gray-800">
+                      {act.name}
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      วันที่เข้าร่วม: {formatDateThaiA(act.event_date)}
+                    </p>
+                    <ul className="flex flex-wrap gap-1">
+                      {act.skills.map((s: string) => (
+                        <li
+                          key={s}
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+                        >
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              ))}
+            </div>
 
+            {totalPages > 1 && (
+              <nav className="mt-6 flex justify-center gap-2">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const p = i + 1;
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`rounded-full px-4 py-1.5 text-sm transition ${
+                        page === p
+                          ? 'bg-gray-900 text-white'
+                          : 'border border-gray-300 bg-white text-gray-800 hover:bg-gray-100'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </nav>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }

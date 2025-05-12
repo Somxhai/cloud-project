@@ -1,7 +1,8 @@
 import { HTTPException } from "hono/http-exception";
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import { PoolClient } from "pg"; // coming from npm:pg
+import { PoolClient } from "https://deno.land/x/postgres@v0.19.3/mod.ts"; // ✅ เปลี่ยนตรงนี้
 import { pool } from "../database/db.ts";
+
 
 /**
  * Wraps an async function and throws a consistent HTTPException if it fails.

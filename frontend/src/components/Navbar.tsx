@@ -66,7 +66,8 @@ export default function MainNavbar() {
 
     loadSessionData();
   }, []);
-
+  const nameA = 'ดร.สมพร สอนดี';
+  const roleA = 'อาจารย์';
   // กำหนดเมนูตาม role
   const menu: { href: string; label: string }[] = [
     //{ href: '/', label: 'หน้าหลัก' },
@@ -84,44 +85,46 @@ export default function MainNavbar() {
       : []),
   ];
 
-  const activeCls =
-    '!px-4 !py-1.5 !rounded-2xl !font-medium !bg-[#ef4653] !text-white !hover:bg-[#e03847] !transition-colors';
-  const normalCls =
-    '!px-4 !py-1.5 !font-medium !text-gray-900 !hover:text-[#ef4653] !transition-colors';
 
-  return (
+  const activeCls =
+    '!bg-[#ef4653] !text-white !px-4 !py-2 !rounded-xl !font-semibold hover:!bg-[#e03847] transition-colors';
+  const normalCls =
+    '!text-sm !font-medium !text-gray-900 hover:!text-[#ef4653] transition-colors';
+
+ return (
     <>
-      <div className="w-full h-[16px] bg-[#ef4653]" />
-      <Navbar fluid rounded={false} className="border-b border-gray-200 bg-white">
-        <NavbarBrand as={Link} href="/">
-          <Image src="/logomain.png" alt="logo" width={120} height={32} priority />
-        </NavbarBrand>
-        <NavbarToggle />
-        <NavbarCollapse className="gap-6 items-center justify-between">
-          <div className="flex gap-6 items-center">
+      <div className="w-full fixed top-0 z-50 flex justify-center py-4">
+        <div className="w-full max-w-7xl bg-white shadow-md rounded-2xl px-6 py-3 flex items-center justify-between">
+          {/* โลโก้ */}
+          <Link href="/" className="flex items-center">
+            <Image src="/logomain.svg" alt="logo" width={144} height={38} priority />
+          </Link>
+
+          {/* เมนูกลาง */}
+          <div className="flex items-center gap-6">
             {menu.map(({ href, label }) => (
-              <NavbarLink
+              <Link
                 key={href}
-                as={Link}
                 href={href}
                 className={isActive(href) ? activeCls : normalCls}
               >
                 {label}
-              </NavbarLink>
-            ))}
-          <div>|</div>
-            {/* ✅ แถบโปรไฟล์จะถูกแสดงเมื่อโหลดเสร็จและมีชื่อกับ role */}
-              <Link
-                href="/auth/profile"
-                className="flex flex-col text-right text-sm leading-tight hover:underline"
-              >
-                <span className="font-semibold text-gray-900">{name}</span>
-                <span className="text-gray-500 capitalize">{role}</span>
               </Link>
-            
+            ))}
+            <div className="text-gray-300">|</div>
+            <Link
+              href="/auth/profile"
+              className="flex flex-col text-right text-sm leading-tight hover:underline"
+            >
+              <span className="font-semibold text-gray-900">{nameA}</span>
+              <span className="text-gray-500">{roleA}</span>
+            </Link>
           </div>
-        </NavbarCollapse>
-      </Navbar>
+        </div>
+      </div>
     </>
   );
 }
+
+
+

@@ -1,39 +1,52 @@
 // backend/main.ts
 import { Hono } from 'hono';
-import { cognitoMiddleware } from './middleware.ts'; // Import the middleware
-import './type.ts'; // Import the extended types
-import {pool} from './database/db.ts'; // Import the database connection
-import { activityApp } from "./handler/activity.ts";
-import { professorApp } from "./handler/professor.ts";
-import { studentApp } from "./handler/student.ts";
-import { skillApp } from "./handler/skill.ts";
-import { cognitoApp } from "./handler/cognito.ts";
 import { cors } from 'hono/cors';
+import { cognitoMiddleware } from './middleware.ts';
+import './type.ts'; // โหลด extended types
+import { safeQuery } from './lib/utils.ts';
+
+// Import route apps จาก handler ทั้งหมด
+import { activityApp } from './handler/activity.ts';
+import { professorApp } from './handler/professor.ts';
+import { studentApp } from './handler/student.ts';
+import { skillApp } from './handler/skill.ts';
+import { curriculumApp } from './handler/curriculum.ts';
+import { evaluationApp } from './handler/evaluation.ts';
+import { cognitoApp } from './handler/cognito.ts';
+import { authApp } from './handler/authHandler.ts';
+import { studentActivityApp } from './handler/student_activity.ts';
 
 const app = new Hono();
 
-// Test route (no authentication needed)
-app.get('/', (c) => {
-  const client = pool.connect();
-  client.query('select 1');
+// Middleware: CORS สำหรับ frontend
+app.use('*', cors({
+  origin: 'http://localhost:3000', // ปรับ origin ให้ตรงกับ frontend
+}));
+
+// Test route
+app.get('/', async (c) => {
+  await safeQuery(
+    (client) => client.queryObject('SELECT 1'),
+    'DB connection failed',
+  );
   return c.text('Hello Hono!');
 });
 
-app.use('*', cors({
-  origin: 'http://localhost:3000', // ระบุ origin ของ frontend
-}));
-
-// Protected route with Cognito authentication middleware
+// Protected route (Cognito auth)
 app.get('/protected', cognitoMiddleware, (c) => {
-  const userSub = c.userSub;
-  return c.text(`Hello, user with ID: ${userSub}`);
+  return c.text(`Hello, user with ID: ${c.userSub}`);
 });
 
-// Start the server
-Deno.serve(app.fetch);
+// Mount route apps
+app.route('/activity', activityApp);
+app.route('/skill', skillApp);
+app.route('/professor', professorApp);
+app.route('/student', studentApp);
+app.route('/curriculum', curriculumApp);
+app.route('/evaluation', evaluationApp);
+app.route('/cognito', cognitoApp);
+app.route('/auth', authApp);
 
-app.route("/activity", activityApp);
-app.route("/skill", skillApp);
-app.route("/professor", professorApp);
-app.route("/student", studentApp);
-app.route("/cognito", cognitoApp);
+app.route('/student-activity', studentActivityApp);
+// Start server
+Deno.serve(app.fetch);

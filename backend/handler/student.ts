@@ -1,112 +1,68 @@
-import { Hono } from "hono";
-import {
-  getStudentActivities,
-  getStudentSkills,
-  getAllStudent,
-  getStudentActivityStatus,
-  updateStudentActivityStatus,
-  createStudentByCognito,
-  getStudentByUserId,
-} from "../database/service/student.ts";
-import { cognitoMiddleware } from "../middleware.ts"; // ใช้ cognitoMiddleware
-import { tryCatchService } from "../lib/utils.ts";
+import { Hono } from 'hono';
+import { tryCatchService } from '../lib/utils.ts';
+export const studentApp = new Hono();
+import { Student } from '../type/app.ts';
+import { createStudent,getStudentFullDetail,
+  getCompletedActivitiesWithSkills,
+  addOrUpdateStudentSkills,
+  getStudentActivitiesByStudent
+ } from '../database/service/student.ts';
 
-export const studentApp = new Hono<{
-  Variables: {
-    userSub: string | null;  // userSub มาจาก JWT
-  };
-}>();
 
-// Public route: Get all students
-studentApp.get("/", async (c) => {
-  const students = await tryCatchService(() => getAllStudent());
-  return c.json(students);
+studentApp.get('/', (c) => {
+  return tryCatchService(() => {
+    return Promise.resolve(c.json({ message: 'GET /student' }));
+  });
 });
 
-// Public route: Get activities of a student
-studentApp.get("/:studentId/activities", async (c) => {
-  const studentId = c.req.param("studentId");
-  const activities = await tryCatchService(() => getStudentActivities(studentId));
+
+
+type CreateStudentInput = Omit<Student, 'id' | 'created_at' | 'updated_at'>;
+
+studentApp.post('/', async (c) => {
+  const body = await c.req.json();
+  const data = body as CreateStudentInput;
+
+  // TODO: อาจตรวจสอบ field สำคัญแบบ manual ก็ได้ (เช่น data.user_id มีไหม)
+  const created = await createStudent(data);
+  return c.json(created, 201);
+});
+
+
+studentApp.get('/:id/detail', async (c) => {
+  const id = c.req.param('id');
+  const data = await getStudentFullDetail(id);
+  return c.json(data);
+});
+
+
+studentApp.get('/:id/activities/completed', async (c) => {
+  const id = c.req.param('id');
+  const data = await getCompletedActivitiesWithSkills(id);
+  return c.json(data);
+});
+
+
+
+studentApp.post('/addStudentSkills', async (c) => {
+  const body = await c.req.json();
+  await addOrUpdateStudentSkills(body.student_id, body.skills);
+  return c.text('success');
+});
+
+
+studentApp.get('/my-activities', async (c) => {
+  const studentId = c.req.query('studentId');
+  if (!studentId) return c.text('studentId is required', 400);
+
+  // Validate or cast studentId to match the expected format
+  if (!/^[\w-]+-[\w-]+-[\w-]+-[\w-]+-[\w-]+$/.test(studentId)) {
+    return c.text('Invalid studentId format', 400);
+  }
+
+  const activities = await getStudentActivitiesByStudent(studentId as `${string}-${string}-${string}-${string}-${string}`);
   return c.json(activities);
 });
 
-// Public route: Get skills of a student
-studentApp.get("/:studentId/skills", async (c) => {
-  const studentId = c.req.param("studentId");
-  const skills = await tryCatchService(() => getStudentSkills(studentId));
-  return c.json(skills);
-});
-
-// Use cognitoMiddleware to protect routes
-//studentApp.use(cognitoMiddleware);
-
-// You can add more protected routes below if needed
-
-import { joinActivity } from "../database/service/student.ts";
-
-studentApp.post("/join", async (c) => {
-  const { student_id, activity_id } = await c.req.json();
-  const result = await tryCatchService(() => joinActivity(student_id, activity_id));
-  return c.json(result);
-});
-
-import { getStudentFullDetail } from "../database/service/student.ts";
-
-studentApp.get("/detail/:studentId", async (c) => {
-  const studentId = c.req.param("studentId");
-  const result = await tryCatchService(() => getStudentFullDetail(studentId));
-  return c.json(result);
-});
 
 
-import { getCompletedActivitiesWithSkills } from "../database/service/student.ts";
-
-studentApp.get("/completed/:studentId", async (c) => {
-  const studentId = c.req.param("studentId");
-  const result = await tryCatchService(() => getCompletedActivitiesWithSkills(studentId));
-  return c.json(result);
-});
-
-
-studentApp.get("/activity-status", async (c) => {
-  const student_id = c.req.query("student_id");
-  const activity_id = c.req.query("activity_id");
-
-  if (!student_id || !activity_id) {
-    return c.text("Missing student_id or activity_id", 400);
-  }
-
-  const result = await tryCatchService(() =>
-    getStudentActivityStatus(student_id, activity_id)
-  );
-  return c.json(result ?? null);
-});
-
-
-studentApp.put("/update-status", async (c) => {
-  const { activity_id, student_id, status } = await c.req.json();
-  if (!activity_id || !student_id || status == null) {
-    return c.text("Missing parameters", 400);
-  }
-
-  const result = await tryCatchService(() =>
-    updateStudentActivityStatus(activity_id, student_id, status)
-  );
-
-  return c.json(result);
-});
-
-
-studentApp.post("/", async (c) => {
-  const body = await c.req.json();
-  const result = await tryCatchService(() => createStudentByCognito(body));
-  return c.json(result);
-});
-
-
-studentApp.get('/profile/:userId', async (c) => {
-  const userId = c.req.param('userId');
-  if (!userId) return c.text('Missing user ID', 400);
-
-  return await tryCatchService(() => getStudentByUserId(userId)).then(data => c.json(data));
-});
