@@ -124,7 +124,7 @@ export default function EditActivityPage() {
   /* ui – main                                                          */
   /* ------------------------------------------------------------------ */
   return (
-    <div className="mx-auto max-w-4xl space-y-10 bg-gray-50 px-6 py-10">
+    <div className="mx-auto max-w-4xl space-y-10 px-6 py-10">
       {/* header */}
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">แก้ไขกิจกรรม</h1>

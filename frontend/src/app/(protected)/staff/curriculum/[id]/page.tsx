@@ -1,6 +1,7 @@
 // src/app/curriculum/[id]/page.tsx
 'use client';
 
+import type { CurriculumProgress } from '@/types/models';
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -8,6 +9,7 @@ import {
   getAllSkills,
   getCurriculumSkills,
   updateCurriculumSkills,
+  getCurriculumProgress
 } from '@/lib/curriculum';
 import type { CurriculumDetail, CurriculumSkillInput, Skill } from '@/types/models';
 import {
@@ -31,7 +33,8 @@ export default function CurriculumPage() {
   /* ------------------------- base detail (view) -------------------- */
   const [detail, setDetail] = useState<CurriculumDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(true);
-
+const [progress, setProgress] = useState<CurriculumProgress | null>(null);
+const [loadingProgress, setLoadingProgress] = useState(true);
   /* ------------------------- edit mode ----------------------------- */
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
@@ -52,6 +55,13 @@ export default function CurriculumPage() {
       .finally(() => setLoadingDetail(false));
   }, [id]);
 
+useEffect(() => {
+   if (!id) return;
+  setLoadingProgress(true);
+   getCurriculumProgress(id)
+     .then(setProgress)
+     .finally(() => setLoadingProgress(false));
+ }, [id]);
   /* ------------------------------------------------------------------ */
   /* fetch edit-related data (when entering edit)                       */
   /* ------------------------------------------------------------------ */
@@ -117,7 +127,7 @@ export default function CurriculumPage() {
   /* ------------------------------------------------------------------ */
   /* ui – loading / error                                               */
   /* ------------------------------------------------------------------ */
-  if (loadingDetail)
+  if (loadingDetail || loadingProgress)
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 text-gray-600">
         <Loader2 className="animate-spin" /> กำลังโหลด…
@@ -178,42 +188,74 @@ export default function CurriculumPage() {
             <div className="flex items-center justify-between">
               <span className="text-gray-700">จำนวนนักศึกษา</span>
               <span className="text-xl font-bold">
-                {detail.students?.length ?? 0} คน
+                {progress?.total_students ?? 0} คน
               </span>
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">ความคืบหน้าเฉลี่ย</span>
-                <span className="font-medium">{detail.progress_percentage ?? 0}%</span>
+                <span className="font-medium">{progress?.overall_percent ?? 0}%</span>
               </div>
-              <ProgressBar v={detail.progress_percentage ?? 0} />
+              <ProgressBar v={progress?.overall_percent ?? 0} />
             </div>
           </div>
         </section>
 
         {/* missing skills */}
-        <section className="space-y-4">
-          <h2 className="flex items-center gap-2 text-xl font-semibold">
-            <AlertTriangle size={20} /> ทักษะที่ยังขาดมากที่สุด
-          </h2>
-          {detail.top_missing_skills?.length ? (
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {detail.top_missing_skills.map((s) => (
-                <li
-                  key={s.skill_id}
-                  className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm"
-                >
-                  <span>{s.name_th}</span>
-                  <span className="text-sm text-red-600">
-                    ขาด {s.count} คน
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">ยังไม่มีข้อมูล</p>
-          )}
-        </section>
+{/* missing & completed skills */}
+<section className="space-y-6">
+  {/* ขาดทักษะ */}
+  <div>
+    <h2 className="flex items-center gap-2 text-xl font-semibold text-red-700">
+      <AlertTriangle size={20} /> ทักษะที่ยังขาดมากที่สุด
+    </h2>
+    {progress?.gaps?.some((g) => g.units_missing > 0) ? (
+      <ul className="grid gap-3 sm:grid-cols-2 mt-3">
+        {progress.gaps
+          .filter((g) => g.units_missing > 0)
+          .sort((a, b) => b.units_missing - a.units_missing)
+          .map((g) => (
+            <li
+              key={g.skill_id}
+              className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm"
+            >
+              <span>{g.name_th}</span>
+              <span className="text-sm text-red-600">
+                ขาด {g.units_missing} หน่วย
+              </span>
+            </li>
+          ))}
+      </ul>
+    ) : (
+      <p className="text-gray-500 mt-2">ไม่มีทักษะที่ขาด</p>
+    )}
+  </div>
+
+  {/* ได้ครบแล้ว */}
+  <div>
+    <h2 className="flex items-center gap-2 text-xl font-semibold text-green-700">
+      <AlertTriangle size={20} className="text-green-700" /> ทักษะที่ได้ครบแล้ว
+    </h2>
+    {progress?.gaps?.some((g) => g.units_missing === 0) ? (
+      <ul className="grid gap-3 sm:grid-cols-2 mt-3">
+        {progress.gaps
+          .filter((g) => g.units_missing === 0)
+          .map((g) => (
+            <li
+              key={g.skill_id}
+              className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm"
+            >
+              <span>{g.name_th}</span>
+              <span className="text-sm text-green-600">ครบแล้ว</span>
+            </li>
+          ))}
+      </ul>
+    ) : (
+      <p className="text-gray-500 mt-2">ยังไม่มีทักษะที่ได้ครบ</p>
+    )}
+  </div>
+</section>
+
       </div>
     );
   }

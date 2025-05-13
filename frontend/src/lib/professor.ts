@@ -31,6 +31,7 @@ export async function getStudentsByProfessor(professorId: string): Promise<Profe
  * GET /professor/:professorId/students/with-skills
  * ดึงรายชื่อนักศึกษา พร้อม skill name และ level
  */
+/*
 export async function getStudentsWithSkillsByProfessor(professorId: string): Promise<StudentWithSkills[]> {
   const res = await fetch(`${BASE_URL}/professor/${professorId}/students/with-skills`, {
     cache: 'no-store',
@@ -40,7 +41,7 @@ export async function getStudentsWithSkillsByProfessor(professorId: string): Pro
   if (!res.ok) throw new Error('ไม่สามารถดึงข้อมูลนักศึกษาพร้อม skill ได้');
   return res.json();
 }
-
+*/
 
 export async function getStudentsWithSkillsSummaryByProfessor(professorId: string) {
   const res = await fetch(`${BASE_URL}/professor/${professorId}/students/skills`);
@@ -71,4 +72,14 @@ export async function getProfessorById(professorId: string) {
   const res = await fetch(`${BASE_URL}/professor/${professorId}`);
   if (!res.ok) throw new Error('ไม่สามารถโหลดข้อมูลอาจารย์');
   return await res.json();
+}
+
+
+export async function getStudentsWithSkillsByProfessor(professorId: string): Promise<any[]> {
+  const res = await fetch(`${BASE_URL}/progress/professor/${professorId}/students`, {
+    cache: 'no-store',
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('โหลดรายชื่อนักศึกษาไม่สำเร็จ');
+  return res.json();
 }

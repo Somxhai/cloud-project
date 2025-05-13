@@ -43,7 +43,9 @@ export default function ActivityEnrollPage() {
       <h1 className="text-2xl font-bold">รายการกิจกรรมที่สามารถเข้าร่วมได้</h1>
 
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {activities.map((a) => (
+        {activities
+  .filter((a) => a.is_published) // ✅ แสดงเฉพาะที่เผยแพร่แล้ว
+  .map((a) => (
           <article
             key={a.id}
             className="flex flex-col overflow-hidden rounded-lg shadow-sm ring-1 ring-gray-200 bg-white hover:shadow-md transition"
@@ -63,18 +65,35 @@ export default function ActivityEnrollPage() {
 
               <p className="mt-2 text-xs font-medium">ทักษะที่ได้รับ:</p>
               <ul className="mb-4 flex flex-wrap gap-1 mt-1">
-                {(a.skills as unknown as string[]).map((s, i) => (
-                  <li key={i}>
-                    <span className="rounded bg-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700">
-                      {s}
-                    </span>
+                {a.skills.map((s) => (
+                  <li key={s.id}>
+                    <SkillBadge skill={s} />
                   </li>
                 ))}
               </ul>
 
 
+
               <div className="mt-auto flex items-center justify-between gap-2 text-sm">
-                <span className="rounded bg-black px-4 py-1 font-semibold text-white">เปิดรับ</span>
+                {(() => {
+  const statusMap = {
+    0: { label: 'เปิดรับสมัคร', color: 'bg-green-600' },
+    1: { label: 'ปิดรับสมัคร', color: 'bg-gray-500' },
+    2: { label: 'ยกเลิก', color: 'bg-red-600' },
+    3: { label: 'เสร็จสิ้น', color: 'bg-blue-600' },
+  } as const;
+
+  const s = statusMap[a.status as 0 | 1 | 2 | 3] || {
+    label: 'ไม่ทราบสถานะ',
+    color: 'bg-gray-400',
+  };
+
+  return (
+    <span className={`rounded px-4 py-1 font-semibold text-white text-xs ${s.color}`}>
+      {s.label}
+    </span>
+  );
+})()}
                 <Link
                   href={`/student/activity/${a.id}`}
                   className="text-red-600 underline-offset-2 hover:underline"

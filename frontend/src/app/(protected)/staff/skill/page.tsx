@@ -360,16 +360,16 @@ export default function SkillManagementPage() {
 
               <button
                 onClick={() => setForm({ ...form, is_active: !form.is_active })}
-                className="flex items-center gap-1 text-sm"
+                className="flex items-center gap-1 text-sm min-w-[100px] "
               >
                 {form.is_active ? (
                   <>
-                    <ToggleRight className="text-emerald-500" size={18} />
+                    <ToggleRight className="text-emerald-500" size={24} />
                     Active
                   </>
                 ) : (
                   <>
-                    <ToggleLeft className="text-gray-400" size={18} />
+                    <ToggleLeft className="text-gray-400" size={24} />
                     Inactive
                   </>
                 )}

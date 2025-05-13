@@ -12,7 +12,9 @@ import { createActivity,addSkillsToActivity,getAllActivitiesWithSkills,getActivi
   getActivityWithSkills,
   submitActivityEvaluation,
   updateConfirmationDays,
-  confirmStudentSkillsLog
+  confirmStudentSkillsLog,
+  updateActivityPublish,
+  updateActivityStatus,
  } from '../database/service/activity.ts'; 
 
 export const activityApp = new Hono();
@@ -249,4 +251,30 @@ activityApp.post('/:activityId/confirm-skills/:studentId', async (c) => {
 
   await confirmStudentSkillsLog(studentId as UUIDTypes, activityId as UUIDTypes, skills);
   return c.json({ success: true });
+});
+
+
+
+activityApp.put('/:id/publish', async (c) => {
+  const id = c.req.param('id');
+  const { is_published } = await c.req.json();
+  try {
+    await updateActivityPublish(id as `${string}-${string}-${string}-${string}-${string}`, is_published);
+    return c.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return c.text('Failed to update publish status', 500);
+  }
+});
+
+activityApp.put('/:id/status', async (c) => {
+  const id = c.req.param('id');
+  const { status } = await c.req.json();
+  try {
+    await updateActivityStatus(id as `${string}-${string}-${string}-${string}-${string}`, status);
+    return c.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return c.text('Failed to update status', 500);
+  }
 });

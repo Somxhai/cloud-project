@@ -7,7 +7,10 @@ import {
   ActivityWithSkills,
   Curriculum,
   CreateStudentInput,
-  StudentActivityWithActivityInfo
+  StudentActivityWithActivityInfo,
+  StudentActivityStatus,
+  StudentProgress,
+  StudentActivityHistory,
 } from '@/types/models';
 
 import { fetchAuthSession } from '@aws-amplify/auth';
@@ -224,4 +227,37 @@ export async function confirmAttendance(studentId: string, activityId: string, s
   });
   if (!res.ok) throw new Error('ไม่สามารถยืนยันได้');
   return await res.json();
+}
+
+/* ------------------------------------------------------------------ */
+/* 1) ความคืบหน้าทักษะรายนักศึกษา                                    */
+/*    GET  /progress/student/:id                                       */
+/* ------------------------------------------------------------------ */
+export async function getStudentProgress(
+  studentId: string,
+): Promise<StudentProgress> {
+  const res = await fetch(`${BASE_URL}/progress/student/${studentId}`, {
+    cache: 'no-store',
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('โหลด progress นักศึกษาไม่สำเร็จ');
+  return res.json();
+}
+
+/* ------------------------------------------------------------------ */
+/* 2) ประวัติกิจกรรม + ทักษะที่ได้รับ                                 */
+/*    GET  /progress/student/:id/activity-history                      */
+/* ------------------------------------------------------------------ */
+export async function getStudentActivityHistory(
+  studentId: string,
+): Promise<StudentActivityHistory[]> {
+  const res = await fetch(
+    `${BASE_URL}/progress/student/${studentId}/activity-history`,
+    {
+      cache: 'no-store',
+      headers: await getAuthHeaders(),
+    },
+  );
+  if (!res.ok) throw new Error('โหลดประวัติกิจกรรมไม่สำเร็จ');
+  return res.json();
 }

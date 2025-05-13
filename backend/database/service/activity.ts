@@ -306,13 +306,20 @@ export const updateActivityById = (
 export const getOpenActivitiesWithSkills = (): Promise<ActivityWithSkills[]> => {
   const query = `
     SELECT 
-      a.id,
-      a.name,
-      a.description,
-      a.event_date,
-      a.cover_image_url,
+      a.*,
       COALESCE(
-        json_agg(s.name_th) FILTER (WHERE s.name_th IS NOT NULL),
+        json_agg(
+          jsonb_build_object(
+            'id', s.id,
+            'name_th', s.name_th,
+            'name_en', s.name_en,
+            'skill_type', s.skill_type,
+            'icon_url', s.icon_url,
+            'is_active', s.is_active,
+            'skill_level', ak.skill_level,
+            'note', ak.note
+          )
+        ) FILTER (WHERE s.id IS NOT NULL),
         '[]'
       ) AS skills
     FROM activity a
@@ -325,7 +332,7 @@ export const getOpenActivitiesWithSkills = (): Promise<ActivityWithSkills[]> => 
 
   return safeQuery<{ rows: ActivityWithSkills[] }>(
     (client) => client.queryObject(query),
-    'Failed to fetch open activities with skills'
+    'Failed to fetch open activities with full skills'
   ).then((res) => res.rows);
 };
 
@@ -469,5 +476,21 @@ export const confirmStudentSkillsLog = async (
     await client.queryObject('COMMIT');
   }, 'Failed to confirm student skills to log');
 };
+
+
+
+// toggle publish
+export const updateActivityPublish = (id: UUIDTypes, pub: boolean) =>
+  safeQuery(c =>
+    c.queryArray`UPDATE activity SET is_published = ${pub} WHERE id = ${id}`, 
+    'Update publish failed'
+  );
+
+// change status
+export const updateActivityStatus = (id: UUIDTypes, st: number) =>
+  safeQuery(c =>
+    c.queryArray`UPDATE activity SET status = ${st} WHERE id = ${id}`, 
+    'Update status failed'
+  );
 
 

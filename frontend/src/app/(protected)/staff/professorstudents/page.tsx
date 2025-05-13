@@ -72,7 +72,7 @@ export default function ProfessorStudentManagementPage() {
   };
 
   return (
-    <div className="min-h-screen px-6 py-10 sm:px-16 bg-gray-50 text-gray-900">
+    <div className="min-h-screen px-6 py-10 sm:px-16  text-gray-900">
       <h1 className="text-2xl sm:text-3xl font-bold mb-8">จัดการนักศึกษาในที่ปรึกษา</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -179,6 +179,7 @@ export async function getParticipantsByActivityId(id: string): Promise<StudentAc
  * PUT /activities/status/:id
  * เปลี่ยนสถานะกิจกรรม
  */
+/*
 export async function updateActivityStatus(id: string, status: number): Promise<Activity> {
   const res = await fetch(`${BASE_URL}/activity/status/${id}`, {
     method: 'PUT',
@@ -193,7 +194,7 @@ export async function updateActivityStatus(id: string, status: number): Promise<
 
   return res.json();
 }
-
+*/
 /**
  * PUT /activities/:id/skills
  * อัปเดต skills ของกิจกรรม
@@ -400,3 +401,18 @@ export async function confirmStudentSkills(
 
 
 
+export async function updateActivityPublish(id:string,pub:boolean){
+  const res = await fetch(`${BASE_URL}/activity/${id}/publish`,{
+    method:'PUT',headers:await getAuthHeaders(),
+    body:JSON.stringify({is_published:pub})
+  });
+  if(!res.ok)throw new Error('update publish failed');
+}
+
+export async function updateActivityStatus(id:string, status:number){
+  const res = await fetch(`${BASE_URL}/activity/${id}/status`,{
+    method:'PUT',headers:await getAuthHeaders(),
+    body:JSON.stringify({status})
+  });
+  if(!res.ok)throw new Error('update status failed');
+}

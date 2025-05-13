@@ -15,6 +15,17 @@ import {
 import { formatDateThai } from '@/lib/utils/date';
 import type { ActivityWithFullSkills } from '@/types/models';
 
+import {
+  Info,
+  CalendarDays,
+  Users,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  ClipboardList,
+  BadgeCheck,
+} from 'lucide-react';
+
 /* ----------------------- label helper ----------------------- */
 const statusLabel = ['เปิดรับ', 'ปิดรับ', 'ยกเลิก', 'เสร็จสิ้น'] as const;
 
@@ -113,82 +124,114 @@ export default function StudentActivityDetailPage() {
           </div>
         </div>
 
-        {/* body */}
-        <div className="space-y-10 p-6">
-          {/* grid: info + schedule */}
-          <section className="grid gap-8 sm:grid-cols-2">
-            {/* info */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">ข้อมูลกิจกรรม</h2>
-              <ul className="space-y-1 text-sm text-gray-700">
-                <li>รายละเอียดเชิงลึก: {activity.details || '—'}</li>
-                <li>
-                  สถานะ:{' '}
-                  <span
-                    className={
-                      activity.status === 0
-                        ? 'text-blue-600'
-                        : activity.status === 3
-                        ? 'text-emerald-600'
-                        : 'text-red-600'
-                    }
-                  >
-                    {statusLabel[activity.status]}
-                  </span>
-                </li>
-                <li>
-                  จำนวนผู้เข้าร่วม: {activity.amount}/{activity.max_amount}
-                </li>
-                <li>สถานที่: {activity.location || '—'}</li>
-                <li>เผยแพร่: {activity.is_published ? '✔' : '✘'}</li>
-                <li>สร้างเมื่อ: {formatDateThai(activity.created_at)}</li>
-                <li>อัปเดตล่าสุด: {formatDateThai(activity.updated_at)}</li>
-              </ul>
-            </div>
+{/* ---------- BODY ---------- */}
+<div className="space-y-10 p-6">
+  {/* Grid: Info + Schedule */}
+  <section className="grid gap-6 sm:grid-cols-2">
+    {/* ข้อมูลกิจกรรม */}
+    <div className="rounded-xl bg-white p-6 shadow-sm space-y-4">
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+        <Info size={18} /> ข้อมูลกิจกรรม
+      </h2>
+      <ul className="space-y-1 text-sm text-gray-700">
+        <li className="flex items-start gap-2">
+          <ClipboardList size={16} className="mt-0.5 text-gray-500" />
+          รายละเอียด: {activity.details || '—'}
+        </li>
+        <li className="flex items-start gap-2">
+          <CheckCircle2 size={16} className="mt-0.5 text-gray-500" />
+          สถานะ:{' '}
+          <span
+            className={
+              activity.status === 0
+                ? 'text-blue-600'
+                : activity.status === 3
+                ? 'text-emerald-600'
+                : 'text-red-600'
+            }
+          >
+            {statusLabel[activity.status]}
+          </span>
+        </li>
+        <li className="flex items-start gap-2">
+          <Users size={16} className="mt-0.5 text-gray-500" />
+          จำนวนผู้เข้าร่วม: {activity.amount}/{activity.max_amount}
+        </li>
+        <li className="flex items-start gap-2">
+          <MapPin size={16} className="mt-0.5 text-gray-500" />
+          สถานที่: {activity.location || '—'}
+        </li>
+        <li className="flex items-start gap-2">
+          <Clock size={16} className="mt-0.5 text-gray-500" />
+          สร้างเมื่อ: {formatDateThai(activity.created_at)}
+        </li>
+        <li className="flex items-start gap-2">
+          <Clock size={16} className="mt-0.5 text-gray-500" />
+          อัปเดตล่าสุด: {formatDateThai(activity.updated_at)}
+        </li>
+      </ul>
+    </div>
 
-            {/* schedule */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">กำหนดการ</h2>
-              <ul className="space-y-1 text-sm text-gray-700">
-                <li>วันจัด: {formatDateThai(activity.event_date)}</li>
-                <li>
-                  ปิดรับสมัคร:{' '}
-                  {activity.registration_deadline
-                    ? formatDateThai(activity.registration_deadline)
-                    : '—'}
-                </li>
-                <li>ยืนยันล่วงหน้า: {activity.confirmation_days_before_event} วัน</li>
-                <li>
-                  ยืนยันได้ตั้งแต่{' '}
-                  {formatDateThai(
-                    new Date(
-                      new Date(activity.event_date).setDate(
-                        new Date(activity.event_date).getDate() -
-                          (activity.confirmation_days_before_event || 3),
-                      ),
-                    ).toISOString(),
-                  )}{' '}
-                  ถึง {formatDateThai(activity.event_date)}
-                </li>
-              </ul>
-            </div>
-          </section>
+    {/* กำหนดการ */}
+    <div className="rounded-xl bg-white p-6 shadow-sm space-y-4">
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+        <CalendarDays size={18} /> กำหนดการ
+      </h2>
+      <ul className="space-y-1 text-sm text-gray-700">
+        <li className="flex items-start gap-2">
+          <CalendarDays size={16} className="mt-0.5 text-gray-500" />
+          วันจัดกิจกรรม: {formatDateThai(activity.event_date)}
+        </li>
+        <li className="flex items-start gap-2">
+          <Clock size={16} className="mt-0.5 text-gray-500" />
+          ปิดรับสมัคร:{' '}
+          {activity.registration_deadline
+            ? formatDateThai(activity.registration_deadline)
+            : '—'}
+        </li>
+        <li className="flex items-start gap-2">
+          <Clock size={16} className="mt-0.5 text-gray-500" />
+          ยืนยันล่วงหน้า: {activity.confirmation_days_before_event} วัน
+        </li>
+        <li className="flex items-start gap-2">
+          <Clock size={16} className="mt-0.5 text-gray-500" />
+          ยืนยันได้ตั้งแต่:{' '}
+          {formatDateThai(
+            new Date(
+              new Date(activity.event_date).setDate(
+                new Date(activity.event_date).getDate() -
+                  (activity.confirmation_days_before_event || 3),
+              ),
+            ).toISOString(),
+          )}{' '}
+          ถึง {formatDateThai(activity.event_date)}
+        </li>
+      </ul>
+    </div>
+  </section>
 
-          {/* skills */}
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">ทักษะที่จะได้รับ</h2>
-            <ul className="flex flex-wrap gap-2">
-              {activity.skills.map((s: { id: Key | null | undefined; name_th: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; skill_type: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; skill_level: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; }) => (
-                <li
-                  key={s.id}
-                  className="rounded-full bg-slate-200 px-3 py-0.5 text-xs font-medium text-slate-700"
-                >
-                  {s.name_th} ({s.skill_type}) – ระดับ {s.skill_level}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
+  {/* ทักษะ */}
+  <section className="rounded-xl bg-white p-6 shadow-sm space-y-4">
+    <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+      <BadgeCheck size={18} /> ทักษะที่จะได้รับ
+    </h2>
+    {activity.skills.length === 0 ? (
+      <p className="text-sm text-gray-500">— ไม่มีทักษะ</p>
+    ) : (
+      <ul className="flex flex-wrap gap-2">
+        {activity.skills.map((s) => (
+          <li
+            key={s.id}
+            className="rounded-full bg-slate-100 px-3 py-0.5 text-xs font-medium text-slate-700"
+          >
+            {s.name_th} ({s.skill_type}) – ระดับ {s.skill_level}
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</div>
+
       </div>
 
       {/* action buttons – bottom right (นอกกล่อง) */}

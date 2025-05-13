@@ -1,6 +1,5 @@
 // ------------------ UUID ------------------
-export type UUID = string;
-
+export type UUID = string; 
 // ------------------ User & Roles ------------------
 export type UserRole = 'student' | 'professor' | 'staff';
 
@@ -157,6 +156,7 @@ export interface StudentWithSkills {
   id: UUID;
   full_name: string;
   student_code: string;
+  percent: number;
   year: number;
   skills: string[]; // เช่น ['Leadership:3', 'Design Thinking:5']
 }
@@ -284,4 +284,70 @@ export type ActivityWithFullSkills = {
 export type StudentActivityWithActivityInfo = StudentActivity & {
   activity_name: string;
   event_date: string;
+};
+
+
+export interface CurriculumProgress {
+  curriculum_id: string;
+  total_students: number;
+  overall_percent: number;        // 0-100
+  gaps: {
+    skill_id: string;
+    name_th: string;
+    name_en: string;
+    skill_type: string;
+    units_missing: number;
+    percent: string;              // "0.00" – "100.00"
+  }[];
+}
+
+
+/* ------------------------------------------------------------------ */
+/* 1) StudentProgress – ความคืบหน้าทักษะนักศึกษา                     */
+/* ------------------------------------------------------------------ */
+export type StudentSkillEntry = {
+  skill_id: UUID;
+  name_th: string;
+  name_en: string;
+  skill_type: SkillType;          // 'soft' | 'hard'
+  level_have: number;             // ระดับที่มี
+  level_required: number;         // ระดับที่ต้องการตามหลักสูตร
+};
+
+export type StudentProgress = {
+  student: Student;
+  percent: number;                // ความคืบหน้าโดยรวม (0-100)
+  units_have: number;            // หน่วยที่มีรวม
+  units_required: number;        // หน่วยที่ต้องมีรวม
+  completed: {
+    hard: StudentSkillEntry[];
+    soft: StudentSkillEntry[];
+  };
+  partial: {
+    hard: StudentSkillEntry[];
+    soft: StudentSkillEntry[];
+  };
+  missing: {
+    hard: StudentSkillEntry[];
+    soft: StudentSkillEntry[];
+  };
+};
+
+/* ------------------------------------------------------------------ */
+/* 2) StudentActivityHistory – กิจกรรมที่เข้าร่วม + ทักษะที่ได้       */
+/* ------------------------------------------------------------------ */
+export type StudentActivitySkill = {
+  skill_id: UUID;
+  name_th: string;
+  name_en: string;
+  level: number;                  // ระดับที่ได้รับจากกิจกรรม
+};
+
+export type StudentActivityHistory = {
+  activity_id: UUID;
+  name: string;
+  event_date: string;
+  description: string | null;
+  cover_image_url?: string | null;
+  skills: StudentActivitySkill[];
 };

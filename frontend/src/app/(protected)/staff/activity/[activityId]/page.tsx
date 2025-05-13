@@ -12,6 +12,8 @@ import {
   updateActivitySkills,
   addSkillsToStudent,
   confirmStudentSkills,
+  updateActivityPublish,
+  updateActivityStatus,
 } from '@/lib/activity';
 import { getAllSkills } from '@/lib/skill';
 import type {
@@ -28,11 +30,21 @@ import {
   Brain,
   FileText,
   Loader2,
-  Save,
   Plus,
   Trash2,
+  CalendarClock,
+  CalendarCheck2,
+  MapPin,
+  Users2,
+  CheckCircle2,
+  ToggleLeft,
+  ToggleRight,
+  Settings,
+  Save,
+  PauseCircle,
 } from 'lucide-react';
-
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 /* -----------------------------------------------------------
  * Local types
  * ---------------------------------------------------------*/
@@ -56,7 +68,7 @@ export default function ActivityDetailPage() {
   const [tab, setTab] = useState<TabKey>('info');
   const [loading, setLoading] = useState(true);
   const [savingSkills, setSavingSkills] = useState(false);
-
+const [reloading, setReloading] = useState(false);
   /* ----------------------- Data state ---------------------- */
   const [activity, setActivity] = useState<Activity | null>(null);
   const [participants, setParticipants] = useState<StudentActivityWithStudentInfo[]>([]);
@@ -67,6 +79,7 @@ export default function ActivityDetailPage() {
   /* ---------------------- Modal state ---------------------- */
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
+const [openEvaluations, setOpenEvaluations] = useState<Record<string, boolean>>({});
 
   /* ------------------------ Derived ------------------------ */
   const pending = participants.filter((p) => p.status === 0);
@@ -74,6 +87,35 @@ export default function ActivityDetailPage() {
   const rejected = participants.filter((p) => p.status === 2);
   const confirmed = approved.filter((p) => p.confirmation_status === 1);
   const completed = participants.filter((p) => p.status === 3);
+  const readOnly = !!activity && (activity.is_published || [1, 2, 3].includes(activity.status));
+function StatsCard({
+  pending, approved, confirmed, completed, rejected,
+}: {
+  pending: number; approved: number; confirmed: number; completed: number; rejected: number;
+}) {
+  const totalRequests = pending + approved + rejected;
+  return (
+    <div className="grid gap-4 rounded-2xl bg-white p-6 shadow-sm sm:grid-cols-3 lg:grid-cols-5">
+      <Stat icon={ClipboardList} label="คำขอ" value={totalRequests} />
+      <Stat icon={CheckCircle} label="อนุมัติ" value={approved} />
+      <Stat icon={Users} label="ยืนยันมา" value={confirmed} />
+      <Stat icon={Brain} label="เข้าร่วมจริง" value={completed} />
+      <Stat icon={XCircle} label="ปฏิเสธ" value={rejected} />
+    </div>
+  );
+}
+
+function Stat({ icon: Icon, label, value }: any) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon size={18} className="text-indigo-600" />
+      <div className="text-sm">
+        {label}:{' '}
+        <span className="font-semibold text-gray-800">{value}</span>
+      </div>
+    </div>
+  );
+}
 
   /* -----------------------------------------------------------
    * Fetch all data once activityId is known
@@ -123,7 +165,12 @@ export default function ActivityDetailPage() {
     const refreshed = await getActivityParticipants(activityId);
     setParticipants(refreshed);
   };
-
+const statusOptions = [
+  { value: 0, label: 'เปิดรับสมัคร', icon: <CheckCircle size={16} />, color: 'bg-green-100 text-green-700' },
+  { value: 1, label: 'ปิดรับสมัคร', icon: <PauseCircle size={16} />, color: 'bg-yellow-100 text-yellow-700' },
+  { value: 2, label: 'ยกเลิก', icon: <XCircle size={16} />, color: 'bg-red-100 text-red-700' },
+  { value: 3, label: 'เสร็จสิ้น', icon: <CalendarCheck2 size={16} />, color: 'bg-blue-100 text-blue-700' },
+];
   /* -----------------------------------------------------------
    * Helper: save / edit skills for activity
    * ---------------------------------------------------------*/
@@ -146,6 +193,38 @@ export default function ActivityDetailPage() {
     setSelectedStudent({ id, name });
     setModalOpen(true);
   };
+
+
+function SummaryCard({
+  evaluations, participants,
+}: {
+  evaluations: ActivityEvaluation[]; participants: number;
+}) {
+  const avg = (key: keyof ActivityEvaluation) =>
+    (evaluations.reduce((s, e) => s + Number(e[key] || 0), 0) / evaluations.length).toFixed(1);
+  return (
+    <div className="grid gap-4 rounded-2xl bg-white p-6 shadow-sm sm:grid-cols-3 lg:grid-cols-6">
+      <Score title="คะแนนสถานที่" value={avg('score_venue')} />
+      <Score title="ผู้บรรยาย" value={avg('score_speaker')} />
+      <Score title="ความน่าสนใจ" value={avg('score_interest')} />
+      <Score title="เนื้อหา" value={avg('score_content')} />
+      <Score title="การนำไปใช้" value={avg('score_applicability')} />
+      <Score title="คะแนนรวม" value={avg('score_overall')} highlight />
+      <div className="col-span-full text-xs text-gray-500">
+        จำนวนการประเมิน {evaluations.length} ครั้ง • ผู้เข้าร่วมจริง {participants} คน
+      </div>
+    </div>
+  );
+}
+
+function Score({ title, value, highlight=false }: {title:string;value:string;highlight?:boolean}) {
+  return (
+    <div className={`flex flex-col items-center ${highlight && 'font-semibold text-indigo-700'}`}>
+      <span className="text-lg">{value}</span>
+      <span className="text-xs text-gray-600 text-center">{title}</span>
+    </div>
+  );
+}
 
   const confirmSkills = async () => {
     if (!selectedStudent) return;
@@ -186,10 +265,52 @@ export default function ActivityDetailPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-6">
       {/* Header */}
-      <header className="space-y-2 rounded-2xl bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-800">{activity.name}</h1>
-        <p className="text-gray-600">{activity.description}</p>
-      </header>
+<header className="flex flex-col gap-2 rounded-2xl bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+  <div>
+    <h1 className="text-3xl font-bold tracking-tight text-gray-800">{activity.name}</h1>
+    <p className="text-gray-600">{activity.description}</p>
+  </div>
+
+  {/* badges */}
+  <div className="flex flex-wrap gap-2">
+    {/* status */}
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-medium ${
+        {
+          0: 'bg-green-100 text-green-800',
+          1: 'bg-yellow-100 text-yellow-800',
+          2: 'bg-red-100 text-red-800',
+          3: 'bg-gray-200 text-gray-700',
+        }[activity.status]
+      }`}
+    >
+      {{
+        0: 'เปิดรับสมัคร',
+        1: 'ปิดรับสมัคร',
+        2: 'ยกเลิก',
+        3: 'เสร็จสิ้น',
+      }[activity.status]}
+    </span>
+
+    {/* publish */}
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-medium ${
+        activity.is_published ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+      }`}
+    >
+      {activity.is_published ? 'Published' : 'Unpublished'}
+    </span>
+
+    {/* edit button */}
+    <Link
+      href={`/staff/activity/edit/${activity.id}`}
+      className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white shadow hover:bg-indigo-700"
+    >
+      แก้ไขรายละเอียด
+    </Link>
+  </div>
+</header>
+
 
       {/* Tabs */}
       <nav className="flex gap-3 overflow-x-auto pb-2">
@@ -219,55 +340,164 @@ export default function ActivityDetailPage() {
 
       {/* ---------- INFO TAB ---------- */}
       {tab === 'info' && (
-        <section className="grid gap-4 rounded-2xl bg-white p-6 shadow-sm md:grid-cols-2 lg:grid-cols-3">
-          <InfoRow label="รายละเอียด" value={activity.details || '-'} />
-          <InfoRow label="วันที่จัด" value={ThaiDate(activity.event_date)} />
-          <InfoRow label="วันปิดรับสมัคร" value={ThaiDate(activity.registration_deadline)} />
-          <InfoRow label="จำนวนที่รับ" value={activity.max_amount} />
-          <InfoRow label="สถานที่" value={activity.location || '-'} />
-          <InfoRow
-            label="สถานะ"
-            value={{ 0: 'เปิดรับ', 1: 'ปิดรับ', 2: 'ยกเลิก', 3: 'เสร็จสิ้น' }[activity.status] || '-'}
-          />
-          <InfoRow label="เผยแพร่" value={activity.is_published ? 'ใช่' : 'ไม่ใช่'} />
-          <InfoRow label="ยืนยันล่วงหน้า" value={`${activity.confirmation_days_before_event} วัน`} />
-          <InfoRow label="เปิดยืนยันตั้งแต่" value={confirmOpenDate()} />
+<section className="rounded-xl bg-white p-6 shadow-sm space-y-8">
+  {/* 🧾 หมวด: ข้อมูลทั่วไป */}
+  <div className="space-y-4">
+    <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+      <FileText size={18} /> ข้อมูลกิจกรรม
+    </h2>
 
-          {/* Edit confirm days */}
-          <div className="col-span-full flex items-end gap-2 pt-2">
-            <input
-              type="number"
-              min={0}
-              className="w-24 rounded border px-3 py-1 text-sm"
-              value={activity.confirmation_days_before_event}
-              onChange={(e) =>
-                setActivity({
-                  ...activity,
-                  confirmation_days_before_event: Number(e.target.value),
-                })
-              }
-            />
-            <button
-              onClick={async () => {
-                await fetch(`/activity/${activity.id}/confirm-days`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ days: activity.confirmation_days_before_event }),
-                });
-                alert('บันทึกแล้ว');
-              }}
-              className="inline-flex items-center gap-1 rounded bg-blue-600 px-4 py-1 text-sm text-white shadow hover:bg-blue-700"
-            >
-              <Save size={14} /> บันทึก
-            </button>
-          </div>
-        </section>
+    <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 text-sm text-gray-700">
+      <li className="flex items-start gap-2">
+        <FileText size={16} className="mt-1 text-gray-500" />
+        รายละเอียด: {activity.details || '—'}
+      </li>
+      <li className="flex items-start gap-2">
+        <CalendarCheck2 size={16} className="mt-1 text-gray-500" />
+        วันที่จัด: {ThaiDate(activity.event_date)}
+      </li>
+      <li className="flex items-start gap-2">
+        <CalendarClock size={16} className="mt-1 text-gray-500" />
+        ปิดรับสมัคร: {ThaiDate(activity.registration_deadline)}
+      </li>
+      <li className="flex items-start gap-2">
+        <Users2 size={16} className="mt-1 text-gray-500" />
+        จำนวนที่รับ: {activity.max_amount} คน
+      </li>
+      <li className="flex items-start gap-2">
+        <MapPin size={16} className="mt-1 text-gray-500" />
+        สถานที่: {activity.location || '—'}
+      </li>
+      <li className="flex items-start gap-2">
+        <CheckCircle2 size={16} className="mt-1 text-gray-500" />
+        เปิดยืนยันได้ตั้งแต่: {confirmOpenDate()}
+      </li>
+    </ul>
+  </div>
+
+  {/* ⚙️ หมวด: การตั้งค่า */}
+  <div className="space-y-4">
+    <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+      <Settings size={18} /> การตั้งค่า
+    </h2>
+
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* ยืนยันล่วงหน้า */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-gray-700 whitespace-nowrap">ยืนยันล่วงหน้า:</label>
+        <input
+          type="number"
+          min={0}
+          className="w-24 rounded border px-3 py-1 text-sm"
+          value={activity.confirmation_days_before_event}
+          onChange={(e) =>
+            setActivity({
+              ...activity,
+              confirmation_days_before_event: Number(e.target.value),
+            })
+          }
+        />
+        <span className="text-sm text-gray-500">วัน</span>
+      </div>
+
+      {/* toggle publish */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-700">เผยแพร่:</span>
+        <button
+          onClick={() =>
+            setActivity({ ...activity, is_published: !activity.is_published })
+          }
+          className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
+            activity.is_published
+              ? 'bg-green-100 text-green-700'
+              : 'bg-gray-200 text-gray-600'
+          }`}
+        >
+          {activity.is_published ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+          {activity.is_published ? 'เผยแพร่แล้ว' : 'ยังไม่เผยแพร่'}
+        </button>
+      </div>
+
+      {/* radio status */
+      }
+<div className="flex flex-col gap-2">
+  <span className="text-sm font-medium text-gray-700">สถานะกิจกรรม:</span>
+  <div className="flex flex-wrap gap-2">
+    {statusOptions.map((opt) => {
+      const isSelected = activity.status === opt.value;
+      return (
+        <button
+          key={opt.value}
+          onClick={() => setActivity({ ...activity, status: opt.value })}
+          className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium border transition
+            ${
+              isSelected
+                ? `${opt.color} border-transparent shadow-sm`
+                : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+            }`}
+        >
+          {opt.icon} {opt.label}
+        </button>
+      );
+    })}
+  </div>
+</div>
+
+    </div>
+
+    {/* ปุ่มบันทึก */}
+    <div className="pt-2">
+      <button
+        onClick={async () => {
+          await Promise.all([
+            fetch(`/activity/${activity.id}/confirm-days`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ days: activity.confirmation_days_before_event }),
+            }),
+            updateActivityPublish(activity.id, activity.is_published),
+            updateActivityStatus(activity.id, activity.status),
+          ]);
+          alert('บันทึกแล้ว');
+        }}
+        className="inline-flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm text-white shadow hover:bg-blue-700"
+      >
+        <Save size={16} /> บันทึกการเปลี่ยนแปลง
+      </button>
+    </div>
+  </div>
+</section>
+
       )}
 
       {/* ---------- PARTICIPANTS TAB ---------- */}
       {tab === 'participants' && (
-        <section className="space-y-6">
-          <StatsCard approved={approved.length} confirmed={confirmed.length} />
+  <section className="space-y-6">
+    {/* 🔁 ปุ่มรีโหลด */}
+    <div className="flex justify-between items-center">
+      <StatsCard
+        pending={pending.length}
+        approved={approved.length}
+        confirmed={confirmed.length}
+        completed={completed.length}
+        rejected={rejected.length}
+      />
+<button
+  onClick={async () => {
+    setReloading(true);
+    const refreshed = await getActivityParticipants(activityId);
+    setParticipants(refreshed);
+    setReloading(false);
+  }}
+  disabled={reloading}
+  className="inline-flex items-center gap-1 rounded bg-gray-200 px-3 py-1 text-sm text-gray-700 hover:bg-gray-300 disabled:opacity-60"
+>
+  {reloading && <Loader2 size={14} className="animate-spin text-gray-500" />}
+  {!reloading && <Loader2 size={14} className="text-gray-500" />} {/* optional */}
+  โหลดใหม่
+</button>
+
+    </div>
 
           <ParticipantList
             title="📥 คำขอเข้าร่วม"
@@ -339,93 +569,145 @@ export default function ActivityDetailPage() {
 
       {/* ---------- SKILLS TAB ---------- */}
       {tab === 'skills' && (
-        <section className="space-y-4">
-          {editableSkills.map((s, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center"
-            >
-              <select
-                value={s.skill_id}
-                onChange={(e) => onSkillChange(idx, 'skill_id', e.target.value)}
-                className="flex-1 rounded border px-3 py-2 text-sm"
-              >
-                <option value="">-- เลือกทักษะ --</option>
-                {allSkills.map((sk) => (
-                  <option key={sk.id} value={sk.id}>
-                    {sk.name_th} ({sk.skill_type})
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={s.skill_level}
-                onChange={(e) => onSkillChange(idx, 'skill_level', Number(e.target.value))}
-                className="rounded border px-3 py-2 text-sm"
-              >
-                {[1, 2, 3, 4, 5].map((lv) => (
-                  <option key={lv} value={lv}>
-                    ระดับ {lv}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="text"
-                placeholder="บันทึกเพิ่มเติม"
-                value={s.note || ''}
-                onChange={(e) => onSkillChange(idx, 'note', e.target.value)}
-                className="flex-1 rounded border px-3 py-2 text-sm"
-              />
-
-              <button
-                onClick={() => setEditableSkills(editableSkills.filter((_, i) => i !== idx))}
-                className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
-              >
-                <Trash2 size={14} /> ลบ
-              </button>
-            </div>
+<section className="space-y-4">
+  {editableSkills.map((s, idx) => (
+    <div
+      key={idx}
+      className="flex flex-col gap-3 rounded-xl bg-gray-50 px-4 py-4 sm:flex-row sm:items-center"
+    >
+      <select
+        disabled={readOnly}
+        value={s.skill_id}
+        onChange={(e) => onSkillChange(idx, 'skill_id', e.target.value)}
+        className="flex-1 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:text-gray-500"
+      >
+        <option value="">-- เลือกทักษะ --</option>
+        {allSkills
+          .filter(
+            (sk) =>
+              !editableSkills.some(
+                (es) => es.skill_id === sk.id && es.skill_id !== s.skill_id
+              )
+          )
+          .map((sk) => (
+            <option key={sk.id} value={sk.id}>
+              {sk.name_th} ({sk.skill_type})
+            </option>
           ))}
+      </select>
 
-          {/* Add & Save */}
-          <div className="flex justify-between pt-2">
-            <button
-              onClick={() => setEditableSkills([...editableSkills, { skill_id: '', skill_level: 3 }])}
-              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-            >
-              <Plus size={14} /> เพิ่มทักษะ
-            </button>
+      <select
+        disabled={readOnly}
+        value={s.skill_level}
+        onChange={(e) => onSkillChange(idx, 'skill_level', Number(e.target.value))}
+        className="bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:text-gray-500"
+      >
+        {[1, 2, 3, 4, 5].map((lv) => (
+          <option key={lv} value={lv}>
+            ระดับ {lv}
+          </option>
+        ))}
+      </select>
 
-            <button
-              onClick={saveSkills}
-              disabled={savingSkills}
-              className="inline-flex items-center gap-1 rounded bg-blue-600 px-4 py-1 text-sm text-white shadow hover:bg-blue-700 disabled:opacity-50"
-            >
-              {savingSkills && <Loader2 size={14} className="animate-spin" />} <Save size={14} /> บันทึกทักษะ
-            </button>
-          </div>
-        </section>
+      <input
+        disabled={readOnly}
+        type="text"
+        placeholder="บันทึกเพิ่มเติม"
+        value={s.note || ''}
+        onChange={(e) => onSkillChange(idx, 'note', e.target.value)}
+        className="flex-1 bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-400 disabled:text-gray-500"
+      />
+
+      <button
+        disabled={readOnly}
+        onClick={() => setEditableSkills(editableSkills.filter((_, i) => i !== idx))}
+        className="text-sm text-red-600 hover:underline disabled:text-gray-400"
+      >
+        <Trash2 size={14} className="inline-block mr-1" /> ลบ
+      </button>
+    </div>
+  ))}
+
+  {/* Add & Save Buttons */}
+  {!readOnly && (
+    <div className="flex justify-between pt-4">
+      <button
+        onClick={() => setEditableSkills([...editableSkills, { skill_id: '', skill_level: 3 }])}
+        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+      >
+        <Plus size={14} /> เพิ่มทักษะ
+      </button>
+
+      <button
+        onClick={saveSkills}
+        disabled={savingSkills}
+        className="inline-flex items-center gap-1 rounded bg-blue-600 px-4 py-1 text-sm text-white shadow hover:bg-blue-700 disabled:opacity-50"
+      >
+        {savingSkills && <Loader2 size={14} className="animate-spin" />} <Save size={14} /> บันทึกทักษะ
+      </button>
+    </div>
+  )}
+</section>
+
       )}
 
       {/* ---------- EVALUATIONS TAB ---------- */}
       {tab === 'evaluations' && (
+        
         <section className="space-y-4">
           {evaluations.length === 0 && (
             <div className="rounded-2xl bg-gray-50 p-6 text-center text-sm text-gray-500 shadow-sm">
               ยังไม่มีการประเมิน
             </div>
           )}
-          {evaluations.map((e) => (
-            <div key={e.id} className="space-y-2 rounded-2xl bg-white p-6 shadow-sm">
-              <div className="text-lg font-medium text-gray-800">คะแนนรวม {e.score_overall} / 5</div>
-              <div className="text-sm text-gray-500">
-                สถานที่: {e.score_venue} | วิทยากร: {e.score_speaker} | ความน่าสนใจ: {e.score_interest}
-              </div>
-              <p className="text-sm text-gray-700">
-                <b>ความคิดเห็น:</b> {e.comment || '-'}
-              </p>
-            </div>
-          ))}
+            {evaluations.length > 0 && (
+              <SummaryCard evaluations={evaluations} participants={completed.length} />
+            )}
+
+{evaluations.map((e) => {
+  const isOpen = openEvaluations[e.id] || false;
+  return (
+    <div key={e.id} className="rounded-2xl bg-white shadow-sm">
+      <button
+        onClick={() =>
+          setOpenEvaluations((prev) => ({
+            ...prev,
+            [e.id]: !isOpen,
+          }))
+        }
+        className="flex w-full items-center justify-between border-b px-6 py-4 text-left text-sm hover:bg-gray-50"
+      >
+        <span className="text-gray-800 font-medium">
+          {e.is_anonymous ? 'ไม่เปิดเผยชื่อ' : 'นักศึกษา'}
+        </span>
+        <span className="flex items-center gap-2 text-gray-600">
+          คะแนนรวม: <b>{e.score_overall} / 5</b>
+          {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </span>
+      </button>
+
+      {isOpen && (
+        <div className="grid grid-cols-2 gap-4 p-6 text-sm text-gray-700 border-t">
+          <Info label="คะแนนสถานที่" value={e.score_venue} />
+          <Info label="ผู้บรรยาย" value={e.score_speaker} />
+          <Info label="ความน่าสนใจ" value={e.score_interest} />
+          <Info label="เนื้อหา" value={e.score_content} />
+          <Info label="การนำไปใช้" value={e.score_applicability} />
+          <Info label="คะแนนรวม" value={e.score_overall} />
+          <div className="col-span-2">
+            <p className="text-gray-600">ความคิดเห็น:</p>
+            <p className="rounded bg-gray-100 p-2">{e.comment || '-'}</p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-gray-600">ข้อเสนอแนะเพิ่มเติม:</p>
+            <p className="rounded bg-gray-100 p-2">{e.suggestions || '-'}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})}
+
         </section>
       )}
 
@@ -573,6 +855,15 @@ function Modal({ onClose, children }: PropsWithChildren<{ onClose: () => void }>
         </button>
         {children}
       </div>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value?: number }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-gray-800">{value ?? '-'}</p>
     </div>
   );
 }

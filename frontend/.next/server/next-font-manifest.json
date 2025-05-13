@@ -1,50 +1,10 @@
 {
   "app": {
-    "[project]/src/app/(protected)/professor/dashboard/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/professor/profile/[id]/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/activities/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
     "[project]/src/app/(protected)/staff/activity/[activityId]/page": [
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
     ],
     "[project]/src/app/(protected)/staff/activity/edit/[activityId]/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/activity/new/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/curriculum/[id]/edit/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/curriculum/[id]/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/curriculum/new/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/curriculum/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/staff/skill/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/student/activity/[activityId]/evaluate/page": [
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
     ],
@@ -57,10 +17,6 @@
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
     ],
     "[project]/src/app/(protected)/student/myactivities/page": [
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
-      "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
-    ],
-    "[project]/src/app/(protected)/student/new/page": [
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfPI2hTWsb_A-s.p.e97e8830.woff2",
       "static/media/iJWQBXeUZi_OHPqn4wq6hQ2_hbJ1xyN9wd43SofNWcdfKI2hTWsb_P2c-s.p.2e4182a0.woff2"
     ],
