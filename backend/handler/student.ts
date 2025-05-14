@@ -5,9 +5,10 @@ import { Student } from '../type/app.ts';
 import { createStudent,getStudentFullDetail,
   getCompletedActivitiesWithSkills,
   addOrUpdateStudentSkills,
-  getStudentActivitiesByStudent
+  submitFeedback,
+  getMyActivities
  } from '../database/service/student.ts';
-
+import { UUIDTypes } from '../lib/uuid.ts';
 
 studentApp.get('/', (c) => {
   return tryCatchService(() => {
@@ -50,7 +51,7 @@ studentApp.post('/addStudentSkills', async (c) => {
   return c.text('success');
 });
 
-
+/*
 studentApp.get('/my-activities', async (c) => {
   const studentId = c.req.query('studentId');
   if (!studentId) return c.text('studentId is required', 400);
@@ -64,5 +65,28 @@ studentApp.get('/my-activities', async (c) => {
   return c.json(activities);
 });
 
+*/
+
+studentApp.get('/my-activities', async (c) => {
+  const studentId = c.req.query('studentId');
+  if (!studentId) {
+    return c.json({ message: 'studentId is required' }, 400);
+  }
+
+  const rows = await getMyActivities(studentId as UUIDTypes);
+  return c.json(rows);
+});
 
 
+studentApp.post('/:studentId/activity/:activityId/feedback', async (c) => {
+  const studentId = c.req.param('studentId');
+  const activityId = c.req.param('activityId');
+
+  try {
+    await submitFeedback(studentId as UUIDTypes, activityId as UUIDTypes);
+    return c.json({ success: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return c.json({ success: false, message }, 500);
+  }
+});

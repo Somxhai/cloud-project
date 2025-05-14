@@ -20,7 +20,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 async function getAuthHeaders() {
   const session = await fetchAuthSession();
   const idToken = session.tokens?.idToken?.toString();
-  if (!idToken) throw new Error('ไม่พบ token');
+  //if (!idToken) throw new Error('ไม่พบ token');
   return {
     Authorization: `Bearer ${idToken}`,
     'Content-Type': 'application/json',
@@ -195,7 +195,8 @@ export async function getStudentActivityStatus(studentId: string, activityId: st
   const data = await res.json();
   return {
     status: data.status,
-    confirmation_status: data.confirmation_status ?? 0
+    confirmation_status: data.confirmation_status ?? 0,
+    feedback_submitted: data.feedback_submitted === true,
   };
 }
 
@@ -211,12 +212,13 @@ export async function joinActivity(studentId: string, activityId: string): Promi
 
 
 
-
+/*
 export async function getMyActivities(studentId: string): Promise<StudentActivityWithActivityInfo[]> {
   const res = await fetch(`${BASE_URL}/student/my-activities?studentId=${studentId}`);
   if (!res.ok) throw new Error('โหลดกิจกรรมของฉันล้มเหลว');
   return res.json();
 }
+*/
 
 
 export async function confirmAttendance(studentId: string, activityId: string, status: 1 | 2) {
@@ -260,4 +262,29 @@ export async function getStudentActivityHistory(
   );
   if (!res.ok) throw new Error('โหลดประวัติกิจกรรมไม่สำเร็จ');
   return res.json();
+}
+
+
+export async function getMyActivities(studentId: string): Promise<StudentActivityWithActivityInfo[]> {
+  const res = await fetch(`${BASE_URL}/student/my-activities?studentId=${studentId}`);
+  if (!res.ok) throw new Error('โหลดกิจกรรมของฉันล้มเหลว');
+  return res.json();
+}
+
+
+export async function submitFeedback(studentId: string, activityId: string): Promise<void> {
+  const res = await fetch(
+    `${BASE_URL}/student/${studentId}/activity/${activityId}/feedback`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'ไม่สามารถส่งแบบประเมินได้');
+  }
 }

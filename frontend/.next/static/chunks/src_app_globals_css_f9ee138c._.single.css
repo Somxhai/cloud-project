@@ -51,7 +51,6 @@
     --color-emerald-600: oklch(59.6% .145 163.225);
     --color-emerald-700: oklch(50.8% .118 165.612);
     --color-slate-100: oklch(96.8% .007 247.896);
-    --color-slate-200: oklch(92.9% .013 255.508);
     --color-slate-700: oklch(37.2% .044 257.287);
     --color-black: #000;
     --color-white: #fff;
@@ -745,10 +744,6 @@
     align-items: center;
   }
 
-  .items-end {
-    align-items: flex-end;
-  }
-
   .items-start {
     align-items: flex-start;
   }
@@ -993,12 +988,16 @@
     background-color: #ef4653 !important;
   }
 
+  .bg-\[\#ef4653\] {
+    background-color: #ef4653;
+  }
+
   .bg-\[\#f5f5f5\] {
     background-color: #f5f5f5;
   }
 
-  .bg-black {
-    background-color: var(--color-black);
+  .bg-\[\#f9f9f9\] {
+    background-color: #f9f9f9;
   }
 
   .bg-black\/40 {
@@ -1131,10 +1130,6 @@
 
   .bg-slate-100 {
     background-color: var(--color-slate-100);
-  }
-
-  .bg-slate-200 {
-    background-color: var(--color-slate-200);
   }
 
   .bg-transparent {
@@ -1445,8 +1440,16 @@
     color: var(--color-white) !important;
   }
 
+  .text-\[\#ef4653\] {
+    color: #ef4653;
+  }
+
   .text-background {
     color: var(--background);
+  }
+
+  .text-blue-500 {
+    color: #3f83f8;
   }
 
   .text-blue-600 {
@@ -1553,6 +1556,10 @@
     .text-white\/80 {
       color: color-mix(in oklab, var(--color-white) 80%, transparent);
     }
+  }
+
+  .text-yellow-600 {
+    color: #9f580a;
   }
 
   .text-yellow-700 {
@@ -1703,6 +1710,12 @@
   }
 
   @media (hover: hover) {
+    .hover\:bg-\[\#e03847\]:hover {
+      background-color: #e03847;
+    }
+  }
+
+  @media (hover: hover) {
     .hover\:bg-\[\#f2f2f2\]:hover {
       background-color: #f2f2f2;
     }
@@ -1807,6 +1820,12 @@
   @media (hover: hover) {
     .hover\:text-gray-700:hover {
       color: #374151;
+    }
+  }
+
+  @media (hover: hover) {
+    .hover\:text-green-700:hover {
+      color: #046c4e;
     }
   }
 
@@ -2060,12 +2079,6 @@
   }
 
   @media (width >= 48rem) {
-    .md\:gap-4 {
-      gap: calc(var(--spacing) * 4);
-    }
-  }
-
-  @media (width >= 48rem) {
     :where(.md\:space-x-8 > :not(:last-child)) {
       --tw-space-x-reverse: 0;
       margin-inline-start: calc(calc(var(--spacing) * 8) * var(--tw-space-x-reverse));
@@ -2149,12 +2162,6 @@
   @media (width >= 64rem) {
     .lg\:grid-cols-6 {
       grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-  }
-
-  @media (width >= 64rem) {
-    .lg\:flex-row {
-      flex-direction: row;
     }
   }
 

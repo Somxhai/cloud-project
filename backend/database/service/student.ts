@@ -152,3 +152,39 @@ export const getStudentActivitiesByStudent = (
     return result.rows;
   }, 'Failed to fetch student activities');
 };
+
+
+
+
+export async function getMyActivities(studentId: UUIDTypes): Promise<StudentActivityWithActivityInfo[]> {
+  const { rows } = await safeQuery<{ rows: StudentActivityWithActivityInfo[] }>(
+    (client) =>
+      client.queryObject<StudentActivityWithActivityInfo>(`
+        SELECT
+          sa.*,
+          a.name AS activity_name,
+          a.description AS activity_description,
+          a.event_date,
+          a.status AS activity_status
+        FROM student_activity sa
+        JOIN activity a ON a.id = sa.activity_id
+        WHERE sa.student_id = $1
+        ORDER BY a.event_date DESC
+      `, [studentId]),
+    'ไม่สามารถดึงกิจกรรมของนักศึกษาได้'
+  );
+
+  return rows;
+}
+
+
+export async function submitFeedback(studentId: UUIDTypes, activityId: UUIDTypes): Promise<void> {
+  await safeQuery(async (client) => {
+    await client.queryObject(
+      `UPDATE student_activity
+       SET feedback_submitted = TRUE
+       WHERE student_id = $1 AND activity_id = $2`,
+      [studentId, activityId],
+    );
+  }, 'ไม่สามารถบันทึกแบบประเมินกิจกรรมได้');
+}

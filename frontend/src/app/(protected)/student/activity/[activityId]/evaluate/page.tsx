@@ -10,7 +10,7 @@ import {
   Star,
   User,
 } from 'lucide-react';
-
+import { submitFeedback } from '@/lib/student';
 /* ------------------------------------------------------------------ */
 /* hard-coded student (replace with auth)                             */
 /* ------------------------------------------------------------------ */
@@ -63,6 +63,7 @@ export default function ActivityEvaluationPage() {
         score_applicability: +form.score_applicability,
         score_overall: +form.score_overall,
       });
+      await submitFeedback(studentId, activityId);
       alert('ส่งแบบประเมินเรียบร้อย');
       router.back();
     } catch (e: any) {

@@ -11,7 +11,7 @@ import { fetchAuthSession } from '@aws-amplify/auth';
 async function getAuthHeaders() {
   const session = await fetchAuthSession();
   const idToken = session.tokens?.idToken?.toString();
-  if (!idToken) throw new Error('ไม่พบ token');
+  //if (!idToken) throw new Error('ไม่พบ token');
   return {
     Authorization: `Bearer ${idToken}`,
     'Content-Type': 'application/json',

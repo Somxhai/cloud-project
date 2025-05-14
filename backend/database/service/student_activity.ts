@@ -10,7 +10,7 @@ export const getStudentActivityStatus = async (
   return await safeQuery(async (client) => {
     const res = await client.queryObject<{ status: number; confirmation_status: number | null }>(
       `
-      SELECT status, confirmation_status
+      SELECT status, confirmation_status,feedback_submitted
       FROM student_activity
       WHERE student_id = $1 AND activity_id = $2
       `,

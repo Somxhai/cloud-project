@@ -13,6 +13,17 @@ import {
 import { useEffect, useState } from 'react';
 import { fetchAuthSession } from '@aws-amplify/auth';
 import '@/lib/amplifyConfig';
+import {
+  ActivitySquare,
+  BookOpenCheck,
+  Users,
+  ClipboardList,
+  UserCircle,
+  PencilRuler,
+  GraduationCap,
+  LayoutDashboard,
+} from 'lucide-react';
+import React from 'react';
 
 /* -------------------------- เช็ก active path -------------------------- */
 const useIsActive = (pathname: string) => (href: string) => {
@@ -25,7 +36,7 @@ export default function MainNavbar() {
   const isActive = useIsActive(pathname);
 
   const [userId, setUserId] = useState<string | null>(null);
-  const [role, setRole] = useState<'student' | 'professor' | 'staff' | null>(null);
+  let [role, setRole] = useState<'student' | 'professor' | 'staff' | null>(null);
   const [name, setName] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false); // ✅ เพื่อเช็คว่าโหลดเสร็จ
 
@@ -56,6 +67,10 @@ export default function MainNavbar() {
         } else {
           setRole(null);
         }
+
+        setRole('staff'); // ✅ สำหรับทดสอบ
+
+
       } catch (err) {
         console.warn('ไม่พบ session หรือยังไม่ได้ login:', err);
         setRole(null);
@@ -68,28 +83,74 @@ export default function MainNavbar() {
   }, []);
   const nameA = 'ดร.สมพร สอนดี';
   const roleA = 'อาจารย์';
+  
   // กำหนดเมนูตาม role
-  const menu: { href: string; label: string }[] = [
-    //{ href: '/', label: 'หน้าหลัก' },
-    ...(role === 'student'
-      ? [
-          { href: `/student/profile/${userId}`, label: 'โปรไฟล์ของฉัน' },
-          { href: '/student/activityenroll', label: 'ลงทะเบียนกิจกรรม' },
-        ]
-      : role === 'professor'
-      ? [{ href: '/professor/dashboard', label: 'สรุปนักศึกษา' }]
-      : role === 'staff'
-      ? [{ href: '/staff/activities', label: 'จัดการกิจกรรม' }
-        , { href: '/staff/professorstudents', label: 'จัดการนักศึกษา' }]
-      
-      : []),
-  ];
+const menu: { href: string; label: string; icon: React.ReactNode }[] = [
+  ...(role === 'student'
+    ? [
+        {
+          href: `/student/profile/${userId}`,
+          label: 'โปรไฟล์ของฉัน',
+          icon: <UserCircle className="w-4 h-4" />,
+        },
+        {
+          href: '/student/activityenroll',
+          label: 'ลงทะเบียนกิจกรรม',
+          icon: <PencilRuler className="w-4 h-4" />,
+        },
+        {
+          href: '/student/myactivities',
+          label: 'กิจกรรมของฉัน',
+          icon: <GraduationCap className="w-4 h-4" />,
+        },
+      ]
+    : role === 'professor'
+    ? [
+        {
+          href: '/professor/dashboard',
+          label: 'สรุปนักศึกษา',
+          icon: <LayoutDashboard className="w-4 h-4" />,
+        },
+      ]
+    : role === 'staff'
+    ? [
+        {
+          href: '/staff/activities',
+          label: 'จัดการกิจกรรม',
+          icon: <ActivitySquare className="w-4 h-4" />,
+        },
+        {
+          href: '/staff/skill',
+          label: 'จัดการทักษะ',
+          icon: <ClipboardList className="w-4 h-4" />,
+        },
+        {
+          href: '/staff/curriculum',
+          label: 'จัดการหลักสูตร',
+          icon: <BookOpenCheck className="w-4 h-4" />,
+        },
+        {
+          href: '/staff/professorstudents',
+          label: 'จัดการนักศึกษาและที่ปรึกษา',
+          icon: <Users className="w-4 h-4" />,
+        },
+      ]
+    : []),
+];
 
 
+/*
   const activeCls =
     '!bg-[#ef4653] !text-white !px-4 !py-2 !rounded-xl !font-semibold hover:!bg-[#e03847] transition-colors';
   const normalCls =
     '!text-sm !font-medium !text-gray-900 hover:!text-[#ef4653] transition-colors';
+*/
+
+    const activeCls =
+  'px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#ef4653] hover:bg-[#e03847] transition-colors';
+const normalCls =
+  'text-sm font-medium text-gray-900 hover:text-[#ef4653] transition-colors';
+
 
  return (
     <>
@@ -102,15 +163,30 @@ export default function MainNavbar() {
 
           {/* เมนูกลาง */}
           <div className="flex items-center gap-6">
-            {menu.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={isActive(href) ? activeCls : normalCls}
-              >
-                {label}
-              </Link>
-            ))}
+{menu.map(({ href, label, icon }, index) => {
+  const active = isActive(href);
+  const isLast = index === menu.length - 1;
+
+  return (
+    <div key={href} className="flex items-center gap-2">
+      <Link href={href} className={active ? activeCls : normalCls}>
+        <div className="flex items-center gap-2">
+          {React.isValidElement(icon)
+            ? React.cloneElement(icon as React.ReactElement<any>, {
+                className: `w-5 h-5 shrink-0 ${active ? 'text-white' : 'text-[#ef4653]'}`,
+              })
+            : icon}
+          <span>{label}</span>
+        </div>
+      </Link>
+
+      {/* | คั่นอยู่ข้างนอก Link */}
+      {!isLast && <div className="text-gray-300 px-1">|</div>}
+    </div>
+  );
+})}
+
+
             <div className="text-gray-300">|</div>
             <Link
               href="/auth/profile"

@@ -281,10 +281,27 @@ export type ActivityWithFullSkills = {
 };
 
 
-export type StudentActivityWithActivityInfo = StudentActivity & {
+export type StudentActivityWithActivityInfo = {
+  id: string;
+  student_id: string;
+  activity_id: string;
+  status: number;
+  confirmation_status: number;
+  confirmed_at: string | null;
+  evaluation_status: number;
+  attended: boolean;
+  feedback_submitted: boolean;
+  participated_at: string | null;
+  verified_by: string | null;
+  verified_at: string | null;
+  completed_at: string | null;
   activity_name: string;
+  activity_description: string; // ✅ ต้องมีบรรทัดนี้
   event_date: string;
+  activity_status: number;
 };
+
+
 
 
 export interface CurriculumProgress {

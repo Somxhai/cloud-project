@@ -42,6 +42,7 @@ export default function StudentActivityDetailPage() {
   const [loading, setLoading] = useState(true);
   const [stateLoading, setStateLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
 
   /* fetch */
   useEffect(() => {
@@ -49,14 +50,15 @@ export default function StudentActivityDetailPage() {
       try {
         const a = await getActivityDetail(activityId);
         setActivity(a);
-        try {
-          const st = await getStudentActivityStatus(studentId, activityId);
-          setJoinStatus(st.status as 0 | 1 | 2 | 3);
-          setConfirmStatus(st.confirmation_status as 0 | 1 | 2);
-        } catch {
-          setJoinStatus(null);
-          setConfirmStatus(null);
-        }
+try {
+  const st = await getStudentActivityStatus(studentId, activityId);
+  setJoinStatus(st.status as 0 | 1 | 2 | 3);
+  setConfirmStatus(st.confirmation_status as 0 | 1 | 2);
+  setFeedbackSubmitted(Boolean((st as { feedback_submitted?: boolean }).feedback_submitted)); // ✅ แปลงเป็น boolean ชัดเจน
+} catch {
+  setJoinStatus(null);
+  setConfirmStatus(null);
+}
       } catch (e: any) {
         setError(e.message || 'โหลดข้อมูลผิดพลาด');
       } finally {
@@ -87,6 +89,9 @@ export default function StudentActivityDetailPage() {
     await confirmAttendance(studentId, activityId, ok ? 1 : 2);
     setConfirmStatus(ok ? 1 : 2);
   };
+
+
+
 
   /* loading / error */
   if (loading)
@@ -235,64 +240,98 @@ export default function StudentActivityDetailPage() {
       </div>
 
       {/* action buttons – bottom right (นอกกล่อง) */}
-      {activity.status === 0 && (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-wrap gap-3">
-          <button
-            onClick={() => router.back()}
-            className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 shadow hover:bg-gray-200"
-          >
-            ย้อนกลับ
-          </button>
+{(activity.status === 0 && joinStatus === null) && (
+  <div className="fixed bottom-6 right-6 z-50 flex flex-wrap gap-3">
+    <button
+      onClick={() => router.back()}
+      className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 shadow hover:bg-gray-200"
+    >
+      ย้อนกลับ
+    </button>
+    <button
+      onClick={handleJoin}
+      className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
+    >
+      ลงทะเบียน
+    </button>
+  </div>
+)}
 
-          {stateLoading ? (
-            <span className="rounded-full bg-gray-100 px-6 py-2 text-sm text-gray-500 shadow">
-              ตรวจสอบสถานะ…
-            </span>
-          ) : joinStatus === null ? (
-            <button
-              onClick={handleJoin}
-              className="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
-            >
-              ลงทะเบียน
-            </button>
-          ) : joinStatus === 0 ? (
-            <span className="rounded-full bg-yellow-100 px-6 py-2 text-sm font-medium text-yellow-700 shadow">
-              รออนุมัติ
-            </span>
-          ) : joinStatus === 2 ? (
-            <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
-              ไม่ได้รับการอนุมัติ
-            </span>
-          ) : joinStatus === 1 && confirmStatus === 0 && inConfirmWindow ? (
-            <>
-              <button
-                onClick={() => handleConfirm(true)}
-                className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700"
-              >
-                ✅ ยืนยัน
-              </button>
-              <button
-                onClick={() => handleConfirm(false)}
-                className="rounded-full bg-red-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
-              >
-                ❌ ยกเลิก
-              </button>
-            </>
-          ) : joinStatus === 1 && confirmStatus === 1 ? (
-            <span className="rounded-full bg-emerald-100 px-6 py-2 text-sm font-medium text-emerald-700 shadow">
-              ยืนยันแล้ว
-            </span>
-          ) : joinStatus === 1 && confirmStatus === 2 ? (
-            <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
-              คุณยกเลิกแล้ว
-            </span>
-          ) : (
-            <span className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-600 shadow">
-              เข้าร่วมแล้ว
-            </span>
-          )}
-        </div>
-      )}
+{(['0', '1', '3'].includes(String(activity.status)) && joinStatus !== null) && (
+  <div className="fixed bottom-6 right-6 z-50 flex flex-wrap gap-3">
+    <button
+      onClick={() => router.back()}
+      className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-700 shadow hover:bg-gray-200"
+    >
+      ย้อนกลับ
+    </button>
+
+    {stateLoading ? (
+      <span className="rounded-full bg-gray-100 px-6 py-2 text-sm text-gray-500 shadow">
+        ตรวจสอบสถานะ…
+      </span>
+    ) : joinStatus === 0 ? (
+      <span className="rounded-full bg-yellow-100 px-6 py-2 text-sm font-medium text-yellow-700 shadow">
+        รออนุมัติ
+      </span>
+    ) : joinStatus === 2 ? (
+      <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
+        ไม่ได้รับการอนุมัติ
+      </span>
+    ) : joinStatus === 1 && confirmStatus === 0 && inConfirmWindow ? (
+      <>
+        <button
+          onClick={() => handleConfirm(true)}
+          className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700"
+        >
+          ✅ ยืนยัน
+        </button>
+        <button
+          onClick={() => handleConfirm(false)}
+          className="rounded-full bg-red-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-red-700"
+        >
+          ❌ ยกเลิก
+        </button>
+      </>
+    ) : joinStatus === 1 && confirmStatus === 0 && !inConfirmWindow ? (
+      <span className="rounded-full bg-blue-100 px-6 py-2 text-sm font-medium text-blue-700 shadow">
+        ได้รับการอนุมัติแล้ว (ยังไม่อยู่ในช่วงยืนยัน)
+      </span>
+    ) : joinStatus === 1 && confirmStatus === 1 ? (
+      <span className="rounded-full bg-emerald-100 px-6 py-2 text-sm font-medium text-emerald-700 shadow">
+        ยืนยันแล้ว
+      </span>
+    ) : joinStatus === 1 && confirmStatus === 2 ? (
+      <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
+        คุณยกเลิกแล้ว
+      </span>
+    ) : joinStatus === 3 ? (
+  <>
+    <span className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-600 shadow">
+      เข้าร่วมแล้ว
+    </span>
+
+    {activity.status === 3 && !confirmStatus && (
+      <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
+        ไม่ได้ยืนยันก่อนเข้าร่วม
+      </span>
+    )}
+
+    {/* ✅ ปุ่มประเมินกิจกรรม */}
+{activity.status === 3 && joinStatus === 3 && !feedbackSubmitted && (
+  <button
+    onClick={() => router.push(`/student/activity/${activityId}/evaluate`)}
+    className="rounded-full bg-indigo-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-indigo-700"
+  >
+    📝 ประเมินกิจกรรม
+  </button>
+)}
+
+  </>
+) : null}
+  </div>
+)}
+
     </div>
   );
 }

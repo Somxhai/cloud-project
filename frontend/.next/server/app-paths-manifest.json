@@ -1,10 +1,18 @@
 {
+  "/(protected)/professor/dashboard/page": "app/(protected)/professor/dashboard/page.js",
+  "/(protected)/professor/new/page": "app/(protected)/professor/new/page.js",
+  "/(protected)/staff/activities/page": "app/(protected)/staff/activities/page.js",
   "/(protected)/staff/activity/[activityId]/page": "app/(protected)/staff/activity/[activityId]/page.js",
   "/(protected)/staff/activity/edit/[activityId]/page": "app/(protected)/staff/activity/edit/[activityId]/page.js",
+  "/(protected)/staff/curriculum/[id]/page": "app/(protected)/staff/curriculum/[id]/page.js",
+  "/(protected)/staff/curriculum/page": "app/(protected)/staff/curriculum/page.js",
+  "/(protected)/staff/professorstudents/page": "app/(protected)/staff/professorstudents/page.js",
+  "/(protected)/staff/skill/page": "app/(protected)/staff/skill/page.js",
   "/(protected)/student/activity/[activityId]/page": "app/(protected)/student/activity/[activityId]/page.js",
   "/(protected)/student/activityenroll/page": "app/(protected)/student/activityenroll/page.js",
   "/(protected)/student/myactivities/page": "app/(protected)/student/myactivities/page.js",
   "/(protected)/student/profile/[studentId]/page": "app/(protected)/student/profile/[studentId]/page.js",
   "/_not-found/page": "app/_not-found/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js"
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
 }
