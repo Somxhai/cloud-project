@@ -1,28 +1,31 @@
-import { Hono } from 'hono';
-import { tryCatchService } from '../lib/utils.ts';
+import { Hono } from "hono";
+import { tryCatchService } from "../lib/utils.ts";
 export const studentApp = new Hono();
-import { Student } from '../type/app.ts';
-import { createStudent,getStudentFullDetail,
-  getCompletedActivitiesWithSkills,
+import { Student } from "../type/app.ts";
+import {
   addOrUpdateStudentSkills,
-  submitFeedback,
-  getMyActivities,
   checkStudentCodeExistsService,
+  createStudent,
+  getCompletedActivitiesWithSkills,
+  getMyActivities,
   getStudentByUserId,
- } from '../database/service/student.ts';
-import { UUIDTypes } from '../lib/uuid.ts';
+  getStudentFullDetail,
+  submitFeedback,
+} from "../database/service/student.ts";
+import { UUIDTypes } from "../lib/uuid.ts";
+import { cognitoMiddleware } from "../middleware.ts";
 
-studentApp.get('/', (c) => {
+studentApp.get("/", (c) => {
   return tryCatchService(() => {
-    return Promise.resolve(c.json({ message: 'GET /student' }));
+    return Promise.resolve(c.json({ message: "GET /student" }));
   });
 });
 
+studentApp.use(cognitoMiddleware);
 
+type CreateStudentInput = Omit<Student, "created_at" | "updated_at">;
 
-type CreateStudentInput = Omit<Student, 'created_at' | 'updated_at'>;
-
-studentApp.post('/', async (c) => {
+studentApp.post("/", async (c) => {
   const body = await c.req.json();
   const data = body as CreateStudentInput;
 
@@ -31,26 +34,22 @@ studentApp.post('/', async (c) => {
   return c.json(created, 201);
 });
 
-
-studentApp.get('/:id/detail', async (c) => {
-  const id = c.req.param('id');
+studentApp.get("/:id/detail", async (c) => {
+  const id = c.req.param("id");
   const data = await getStudentFullDetail(id);
   return c.json(data);
 });
 
-
-studentApp.get('/:id/activities/completed', async (c) => {
-  const id = c.req.param('id');
+studentApp.get("/:id/activities/completed", async (c) => {
+  const id = c.req.param("id");
   const data = await getCompletedActivitiesWithSkills(id);
   return c.json(data);
 });
 
-
-
-studentApp.post('/addStudentSkills', async (c) => {
+studentApp.post("/addStudentSkills", async (c) => {
   const body = await c.req.json();
   await addOrUpdateStudentSkills(body.student_id, body.skills);
-  return c.text('success');
+  return c.text("success");
 });
 
 /*
@@ -69,20 +68,19 @@ studentApp.get('/my-activities', async (c) => {
 
 */
 
-studentApp.get('/my-activities', async (c) => {
-  const studentId = c.req.query('studentId');
+studentApp.get("/my-activities", async (c) => {
+  const studentId = c.req.query("studentId");
   if (!studentId) {
-    return c.json({ message: 'studentId is required' }, 400);
+    return c.json({ message: "studentId is required" }, 400);
   }
 
   const rows = await getMyActivities(studentId as UUIDTypes);
   return c.json(rows);
 });
 
-
-studentApp.post('/:studentId/activity/:activityId/feedback', async (c) => {
-  const studentId = c.req.param('studentId');
-  const activityId = c.req.param('activityId');
+studentApp.post("/:studentId/activity/:activityId/feedback", async (c) => {
+  const studentId = c.req.param("studentId");
+  const activityId = c.req.param("activityId");
 
   try {
     await submitFeedback(studentId as UUIDTypes, activityId as UUIDTypes);
@@ -93,21 +91,22 @@ studentApp.post('/:studentId/activity/:activityId/feedback', async (c) => {
   }
 });
 
-
-studentApp.get('/check-code', async (c) => {
-  const student_code = c.req.query('student_code');
+studentApp.get("/check-code", async (c) => {
+  const student_code = c.req.query("student_code");
   if (!student_code) {
-    return c.json({ error: 'Missing student_code' }, 400);
+    return c.json({ error: "Missing student_code" }, 400);
   }
 
   const exists = await checkStudentCodeExistsService(student_code);
   return c.json({ exists });
 });
 
+studentApp.get("/profile/:id", async (c) => {
+  const id = c.req.param("id");
+  if (!id) return c.text("Missing user ID", 400);
 
-studentApp.get('/profile/:id', async (c) => {
-  const id = c.req.param('id');
-  if (!id) return c.text('Missing user ID', 400);
-
-  return await tryCatchService(() => getStudentByUserId(id as UUIDTypes)).then(data => c.json(data));
+  return await tryCatchService(() => getStudentByUserId(id as UUIDTypes)).then(
+    (data) => c.json(data),
+  );
 });
+

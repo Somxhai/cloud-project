@@ -1,16 +1,17 @@
 import { Hono } from "hono";
-import { S3Client, PutObjectCommand } from "npm:@aws-sdk/client-s3";
-import "https://deno.land/std@0.221.0/dotenv/load.ts";
+import { PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3";
 import { multiParser } from "https://deno.land/x/multiparser@0.114.0/mod.ts";
 import { contentType } from "https://deno.land/std@0.221.0/media_types/mod.ts";
+import { cognitoMiddleware } from "../middleware.ts";
 
 type FormFile = {
   filename: string;
   type: string;
-  content: Uint8Array;          // multiparser ใส่ binary มาใน property นี้
+  content: Uint8Array; // multiparser ใส่ binary มาใน property นี้
 };
 
 export const uploadApp = new Hono();
+uploadApp.use(cognitoMiddleware);
 
 // ---------- S3 ----------
 const s3 = new S3Client({
@@ -47,23 +48,22 @@ uploadApp.post("/upload-image", async (c) => {
   const key = `uploads/${crypto.randomUUID()}.${ext}`;
   const mime = contentType("." + ext) || "application/octet-stream";
 
-const bucket = Deno.env.get("AWS_S3_BUCKET")?.trim();
-if (!bucket) {
-  throw new Error("Missing env AWS_S3_BUCKET");
-}
+  const bucket = Deno.env.get("AWS_S3_BUCKET")?.trim();
+  if (!bucket) {
+    throw new Error("Missing env AWS_S3_BUCKET");
+  }
 
-const command = new PutObjectCommand({
-  Bucket: bucket,
-  Key: key,
-  Body: file.content,
-  ContentType: mime,
-});
-
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: file.content,
+    ContentType: mime,
+  });
 
   await s3.send(command);
 
-const region = Deno.env.get("AWS_REGION")!;
-const url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+  const region = Deno.env.get("AWS_REGION")!;
+  const url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
   return c.json({ url });
 });
