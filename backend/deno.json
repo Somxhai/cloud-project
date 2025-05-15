@@ -1,22 +1,24 @@
 {
-  "imports": {
-    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3@^3.810.0",
-    "busboy": "npm:busboy@^1.6.0",
-    "hono": "jsr:@hono/hono@^4.7.7",
-    "mime-types": "npm:mime-types@^3.0.1",
-    "uuid": "npm:uuid@^11.1.0",
-    "pg": "npm:pg@^8.14.1",
-    "jose": "https://deno.land/x/jose@v4.0.0/index.ts",
-    "@std/assert": "jsr:@std/assert",
-    "aws-sdk": "npm:aws-sdk@^2.0.0"
-  },
-  "tasks": {
-    "start": "deno run --allow-net --allow-env main.ts",
-    "dev": "deno run --watch --allow-net --env-file --allow-env --allow-write --allow-read main.ts"
-  },
-  "compilerOptions": {
-    "jsx": "precompile",
-    "jsxImportSource": "hono/jsx",
-    "noImplicitAny": false
-  }
+    "imports": {
+        "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3@^3.810.0",
+        "aws-jwt-verify": "npm:aws-jwt-verify@^5.1.0",
+        "busboy": "npm:busboy@^1.6.0",
+        "hono": "jsr:@hono/hono@^4.7.7",
+        "mime-types": "npm:mime-types@^3.0.1",
+        "uuid": "npm:uuid@^11.1.0",
+        "pg": "npm:pg@^8.14.1",
+        "jose": "https://deno.land/x/jose@v4.0.0/index.ts",
+        "@std/assert": "jsr:@std/assert",
+        "aws-sdk": "npm:aws-sdk@^2.1692.0"
+    },
+    "tasks": {
+        "start": "deno run --allow-net --allow-env main.ts",
+        "dev": "deno run --watch --allow-net --env-file --allow-env --allow-write --allow-read main.ts"
+    },
+    "compilerOptions": {
+        "jsx": "precompile",
+        "jsxImportSource": "hono/jsx",
+        "noImplicitAny": false
+    },
+    "nodeModulesDir": "auto"
 }
