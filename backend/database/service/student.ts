@@ -1,8 +1,11 @@
-import { safeQuery } from '../../lib/utils.ts';
-import type { Student,StudentActivityWithActivityInfo } from '../../type/app.ts';
+import { safeQuery } from "../../lib/utils.ts";
+import type {
+  Student,
+  StudentActivityWithActivityInfo,
+} from "../../type/app.ts";
 import { UUIDTypes } from "../../lib/uuid.ts";
 
-type CreateStudentInput = Omit<Student, 'created_at' | 'updated_at'>;
+type CreateStudentInput = Omit<Student, "created_at" | "updated_at">;
 
 export const createStudent = (data: CreateStudentInput): Promise<Student> => {
   return safeQuery(async (client) => {
@@ -41,9 +44,8 @@ export const createStudent = (data: CreateStudentInput): Promise<Student> => {
     });
 
     return result.rows[0];
-  }, 'Failed to create student');
+  }, "Failed to create student");
 };
-
 
 // deno-lint-ignore no-explicit-any
 export const getStudentFullDetail = (id: string): Promise<any> => {
@@ -63,19 +65,25 @@ export const getStudentFullDetail = (id: string): Promise<any> => {
       args: [id],
     });
 
-    const softSkills = await client.queryArray<[string, number]>(`
+    const softSkills = await client.queryArray<[string, number]>(
+      `
       SELECT s.name_th, ss.level
       FROM student_skill ss
       JOIN skill s ON s.id = ss.skill_id
       WHERE ss.student_id = $1 AND s.skill_type = 'soft'
-    `, [id]);
+    `,
+      [id],
+    );
 
-    const hardSkills = await client.queryArray<[string, number]>(`
+    const hardSkills = await client.queryArray<[string, number]>(
+      `
       SELECT s.name_th, ss.level
       FROM student_skill ss
       JOIN skill s ON s.id = ss.skill_id
       WHERE ss.student_id = $1 AND s.skill_type = 'hard'
-    `, [id]);
+    `,
+      [id],
+    );
 
     const student = studentRes.rows[0];
     return {
@@ -83,12 +91,13 @@ export const getStudentFullDetail = (id: string): Promise<any> => {
       Skill_S: softSkills.rows.map(([name, level]) => `${name}:${level}`),
       Skill_H: hardSkills.rows.map(([name, level]) => `${name}:${level}`),
     };
-  }, 'Failed to get student full detail');
+  }, "Failed to get student full detail");
 };
 
-
 // deno-lint-ignore no-explicit-any
-export const getCompletedActivitiesWithSkills = (studentId: string): Promise<any[]> => {
+export const getCompletedActivitiesWithSkills = (
+  studentId: string,
+): Promise<any[]> => {
   return safeQuery(async (client) => {
     // deno-lint-ignore no-explicit-any
     const result = await client.queryObject<any>({
@@ -107,15 +116,15 @@ export const getCompletedActivitiesWithSkills = (studentId: string): Promise<any
     });
 
     return result.rows;
-  }, 'Failed to get completed activities with skills');
+  }, "Failed to get completed activities with skills");
 };
 
 export const addOrUpdateStudentSkills = (
   studentId: string,
-  skills: { skill_id: string; skill_level: number }[]
+  skills: { skill_id: string; skill_level: number }[],
 ): Promise<void> => {
   return safeQuery(async (client) => {
-    await client.queryObject('BEGIN');
+    await client.queryObject("BEGIN");
 
     for (const skill of skills) {
       await client.queryObject(
@@ -127,17 +136,16 @@ export const addOrUpdateStudentSkills = (
           level = LEAST(5, student_skill.level + $3),
           updated_at = CURRENT_TIMESTAMP;
         `,
-        [studentId, skill.skill_id, skill.skill_level]
+        [studentId, skill.skill_id, skill.skill_level],
       );
     }
 
-    await client.queryObject('COMMIT');
-  }, 'Failed to add/update student skills');
+    await client.queryObject("COMMIT");
+  }, "Failed to add/update student skills");
 };
 
-
 export const getStudentActivitiesByStudent = (
-  studentId: UUIDTypes
+  studentId: UUIDTypes,
 ): Promise<StudentActivityWithActivityInfo[]> => {
   return safeQuery(async (client) => {
     const result = await client.queryObject<StudentActivityWithActivityInfo>({
@@ -151,16 +159,16 @@ export const getStudentActivitiesByStudent = (
       args: [studentId],
     });
     return result.rows;
-  }, 'Failed to fetch student activities');
+  }, "Failed to fetch student activities");
 };
 
-
-
-
-export async function getMyActivities(studentId: UUIDTypes): Promise<StudentActivityWithActivityInfo[]> {
+export async function getMyActivities(
+  studentId: UUIDTypes,
+): Promise<StudentActivityWithActivityInfo[]> {
   const { rows } = await safeQuery<{ rows: StudentActivityWithActivityInfo[] }>(
     (client) =>
-      client.queryObject<StudentActivityWithActivityInfo>(`
+      client.queryObject<StudentActivityWithActivityInfo>(
+        `
         SELECT
           sa.*,
           a.name AS activity_name,
@@ -171,15 +179,19 @@ export async function getMyActivities(studentId: UUIDTypes): Promise<StudentActi
         JOIN activity a ON a.id = sa.activity_id
         WHERE sa.student_id = $1
         ORDER BY a.event_date DESC
-      `, [studentId]),
-    'ไม่สามารถดึงกิจกรรมของนักศึกษาได้'
+      `,
+        [studentId],
+      ),
+    "ไม่สามารถดึงกิจกรรมของนักศึกษาได้",
   );
 
   return rows;
 }
 
-
-export async function submitFeedback(studentId: UUIDTypes, activityId: UUIDTypes): Promise<void> {
+export async function submitFeedback(
+  studentId: UUIDTypes,
+  activityId: UUIDTypes,
+): Promise<void> {
   await safeQuery(async (client) => {
     await client.queryObject(
       `UPDATE student_activity
@@ -187,22 +199,20 @@ export async function submitFeedback(studentId: UUIDTypes, activityId: UUIDTypes
        WHERE student_id = $1 AND activity_id = $2`,
       [studentId, activityId],
     );
-  }, 'ไม่สามารถบันทึกแบบประเมินกิจกรรมได้');
+  }, "ไม่สามารถบันทึกแบบประเมินกิจกรรมได้");
 }
 
-
-
-
-export const checkStudentCodeExistsService = async (student_code: string): Promise<boolean> => {
+export const checkStudentCodeExistsService = async (
+  student_code: string,
+): Promise<boolean> => {
   return await safeQuery(async (client) => {
     const { rows } = await client.queryObject<{ count: number }>(
       `SELECT COUNT(*)::int as count FROM student WHERE student_code = $1`,
-      [student_code]
+      [student_code],
     );
     return rows[0].count > 0;
-  }, 'Failed to check student code');
+  }, "Failed to check student code");
 };
-
 
 export const getStudentByUserId = async (id: UUIDTypes) => {
   const query = `
@@ -210,6 +220,17 @@ export const getStudentByUserId = async (id: UUIDTypes) => {
   `;
   return await safeQuery<{ rows: Student[] }>(
     (client) => client.queryObject(query, [id]),
-    "Failed to get student profile"
-  ).then(res => res.rows[0]);
+    "Failed to get student profile",
+  ).then((res) => res.rows[0]);
 };
+
+export const getStudentBySubId = async (subId: string) => {
+  const query = `
+        SELECT * FROM student WHERE user_id = $1 LIMIT 1;
+    `;
+  return await safeQuery<{ rows: Student[] }>(
+    (client) => client.queryObject(query, [subId]),
+    "Failed to get student profile",
+  ).then((res) => res.rows[0]);
+};
+
