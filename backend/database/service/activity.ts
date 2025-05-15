@@ -120,6 +120,7 @@ const groupByActivityWithSkills = (rows: ActivitySkillRow[]): ActivityWithSkills
         is_published: row.is_published,
         created_at: row.created_at,
         updated_at: row.updated_at,
+        confirmation_days_before_event: row.confirmation_days_before_event,
         skills: [],
       });
     }
@@ -355,6 +356,7 @@ const BASE_JOIN_SELECT = `
     a.is_published,
     a.created_at,
     a.updated_at,
+    a.confirmation_days_before_event,
 
     s.id as skill_id,
     s.name_th,

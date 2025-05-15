@@ -150,21 +150,21 @@ export default function SignInPage() {
             <div className="space-y-3">
               <button
                 onClick={() => handleRoleSelect('student')}
-                className="w-full flex items-center gap-3 px-4 py-2 border rounded-lg hover:bg-gray-100"
+                className="w-full flex items-center gap-3 px-4 py-2   rounded-lg hover:bg-gray-100"
               >
                 <GraduationCap className="w-5 h-5 text-blue-600" />
                 สมัครเป็นนักศึกษา (Student)
               </button>
               <button
                 onClick={() => handleRoleSelect('professor')}
-                className="w-full flex items-center gap-3 px-4 py-2 border rounded-lg hover:bg-gray-100"
+                className="w-full flex items-center gap-3 px-4 py-2  rounded-lg hover:bg-gray-100"
               >
                 <Briefcase className="w-5 h-5 text-green-600" />
                 สมัครเป็นอาจารย์ (Professor)
               </button>
               <button
                 onClick={() => handleRoleSelect('staff')}
-                className="w-full flex items-center gap-3 px-4 py-2 border rounded-lg hover:bg-gray-100"
+                className="w-full flex items-center gap-3 px-4 py-2  rounded-lg hover:bg-gray-100"
               >
                 <ShieldCheck className="w-5 h-5 text-purple-600" />
                 สมัครเป็นเจ้าหน้าที่ (Staff)

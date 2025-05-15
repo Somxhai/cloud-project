@@ -76,6 +76,7 @@ export default function ProfilePage() {
         setLoading(false);
       } catch (err) {
         console.error(err);
+        router.push('/auth/force-signin');
         router.push('/auth/signin');
       }
     };

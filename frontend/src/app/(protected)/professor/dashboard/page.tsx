@@ -87,7 +87,7 @@ export default function ProfessorDashboard() {
             <button
               key={y}
               onClick={() => setTab(y as typeof tab)}
-              className={`rounded-full border px-4 py-1.5 font-medium transition ${
+              className={`rounded-full px-4 py-1.5 font-medium transition ${
                 tab === y
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'

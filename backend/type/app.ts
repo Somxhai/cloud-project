@@ -92,6 +92,7 @@ export type Activity = {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  confirmation_days_before_event: number;
 };
 
 export type ActivitySkill = {
@@ -227,6 +228,7 @@ export type ActivitySkillRow = {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  confirmation_days_before_event: number;
 
   skill_id: string | null;
   name_th: string | null;

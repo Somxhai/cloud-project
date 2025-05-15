@@ -65,7 +65,8 @@ export default function ProfessorProfilePage() {
           <UserCircle className="w-6 h-6 text-blue-600" />
           {fullDisplayName}
         </h1>
-        <span className="text-sm text-gray-500">User ID: {professor.user_id}</span>
+        {// <span className="text-sm text-gray-500">User ID: {professor.user_id}</span> 
+        }
       </header>
 
       <section className="rounded-2xl bg-white p-6 shadow space-y-4 text-sm text-gray-800">

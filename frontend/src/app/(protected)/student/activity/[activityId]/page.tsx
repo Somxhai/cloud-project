@@ -94,7 +94,7 @@ export default function StudentActivityDetailPage() {
     const eventDate = new Date(activity.event_date);
     const openDate = new Date(eventDate);
     openDate.setDate(
-      eventDate.getDate() - (activity.confirmation_days_before_event || 3)
+      eventDate.getDate() - (activity.confirmation_days_before_event)
     );
     return now >= openDate && now < eventDate;
   })();
@@ -221,7 +221,7 @@ export default function StudentActivityDetailPage() {
                     new Date(
                       new Date(activity.event_date).setDate(
                         new Date(activity.event_date).getDate() -
-                          (activity.confirmation_days_before_event || 3)
+                          (activity.confirmation_days_before_event)
                       )
                     ).toISOString()
                   )}{' '}

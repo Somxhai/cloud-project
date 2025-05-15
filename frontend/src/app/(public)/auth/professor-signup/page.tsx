@@ -111,7 +111,11 @@ export default function ProfessorSignUpPage() {
 
       const sub = userSubRef.current;
       if (!sub) throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ (sub) ได้');
-
+      await fetch('http://localhost:8000/cognito/add-to-group', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: auth.username, groupName: 'professor' }),
+      });
       await createProfessor({
         id: sub,
         user_id: sub,

@@ -59,6 +59,12 @@ export default function StaffSignUpPage() {
         username: auth.username,
         confirmationCode: auth.code,
       });
+
+      await fetch('http://localhost:8000/cognito/add-to-group', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: auth.username, groupName: 'staff' }),
+      });
       setStep(3);
       alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
       router.push('/auth/signin');
@@ -121,14 +127,14 @@ export default function StaffSignUpPage() {
               placeholder="กรอกรหัสยืนยันจากอีเมล"
               onChange={handleChange}
             />
-            <button
-              disabled={loading}
-              onClick={handleConfirm}
-              className="btn-success w-full flex justify-center items-center gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              ยืนยันอีเมล
-            </button>
+<button
+  disabled={loading}
+  onClick={handleConfirm}
+  className="w-full bg-green-600 text-white font-semibold py-3 text-base rounded-lg flex items-center justify-center gap-2 hover:bg-green-700 transition disabled:opacity-60"
+>
+  <CheckCircle2 className="w-5 h-5" />
+  ยืนยันอีเมล
+</button>
             <button
               onClick={() => setStep(1)}
               className="text-sm text-gray-500 hover:underline flex items-center gap-1 justify-center"

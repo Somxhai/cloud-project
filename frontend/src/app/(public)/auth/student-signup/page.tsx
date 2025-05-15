@@ -29,6 +29,7 @@ export default function StudentSignUpPage() {
   const [error, setError] = useState('');
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const userSubRef = useRef<string | null>(null);
+  const [studentCodeValid, setStudentCodeValid] = useState(true);
 
   useEffect(() => {
     getAllCurricula().then(setCurricula);
@@ -55,8 +56,13 @@ export default function StudentSignUpPage() {
     code: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'student_code' && /^\d{10}$/.test(value)) {
+      const exists = await checkStudentCodeExists(value);
+      setStudentCodeValid(!exists);
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -70,21 +76,35 @@ export default function StudentSignUpPage() {
     setProfilePictureFile(file);
   };
 
-  const handleNext = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const exists = await checkStudentCodeExists(form.student_code);
-      if (exists) {
-        setError('รหัสนักศึกษานี้ถูกใช้แล้ว');
-      } else {
-        setStep(2);
-      }
-    } catch {
-      setError('เกิดข้อผิดพลาดในการตรวจสอบรหัสนักศึกษา');
-    }
-    setLoading(false);
-  };
+const isStep1Valid = () => {
+  return (
+    /^\d{10}$/.test(form.student_code) &&
+    form.full_name.trim() !== '' &&
+    form.faculty.trim() !== '' &&
+    form.major.trim() !== '' &&
+    form.year !== '' &&
+    form.curriculum_id !== '' &&
+    form.phone.trim() !== '' &&
+    form.email.trim() !== '' &&
+    form.line_id.trim() !== '' &&
+    form.birth_date.trim() !== '' &&
+    form.gender !== ''
+  );
+};
+
+const handleNext = async () => {
+  if (!isStep1Valid()) {
+    setError('กรุณากรอกข้อมูลให้ครบถ้วน');
+    return;
+  }
+  if (!studentCodeValid) {
+    setError('รหัสนักศึกษานี้ถูกใช้แล้ว');
+    return;
+  }
+  setError('');
+  setStep(2);
+};
+
 
   const handleSignUp = async () => {
     setError('');
@@ -114,6 +134,12 @@ export default function StudentSignUpPage() {
 
       const sub = userSubRef.current;
       if (!sub) throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ (sub) ได้');
+
+      await fetch('http://localhost:8000/cognito/add-to-group', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: auth.username, groupName: 'student' }),
+      });
 
       let imageUrl = form.profile_picture_url;
 
@@ -177,10 +203,20 @@ export default function StudentSignUpPage() {
         {step === 1 && (
           <div className="space-y-4">
             <Input icon={<UserPlus />} name="student_code" placeholder="รหัสนักศึกษา" onChange={handleChange} />
+            {!studentCodeValid && (
+  <p className="text-sm text-red-500">รหัสนักศึกษานี้ถูกใช้แล้ว</p>
+)}
+
             <Input icon={<BookOpen />} name="full_name" placeholder="ชื่อ-นามสกุล" onChange={handleChange} />
             <Input icon={<ShieldCheck />} name="faculty" placeholder="คณะ" onChange={handleChange} />
             <Input icon={<BookOpen />} name="major" placeholder="สาขา" onChange={handleChange} />
-            <Input icon={<Calendar />} name="year" type="number" placeholder="ปีการศึกษา" onChange={handleChange} />
+            <Select
+  name="year"
+  value={form.year}
+  onChange={handleChange}
+  options={['1', '2', '3', '4'].map((y) => ({ label: `ชั้นปีที่ ${y}`, value: y }))}
+/>
+
             <Select name="curriculum_id" onChange={handleChange} options={curricula.map((c) => ({ label: c.name, value: c.id }))} />
             <Input icon={<Phone />} name="phone" placeholder="เบอร์โทรศัพท์" onChange={handleChange} />
             <Input icon={<Mail />} name="email" placeholder="อีเมล" onChange={handleChange} />
@@ -284,16 +320,19 @@ function Input({
 
 function Select({
   name,
+  value,
   onChange,
   options,
 }: {
   name: string;
+  value?: string;
   onChange: React.ChangeEventHandler<HTMLSelectElement>;
   options: { label: string; value: string }[];
 }) {
   return (
     <select
       name={name}
+      value={value}
       onChange={onChange}
       className="w-full text-sm bg-white border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
     >

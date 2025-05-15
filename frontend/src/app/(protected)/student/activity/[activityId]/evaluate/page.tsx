@@ -1,7 +1,7 @@
 // src/app/(protected)/student/activity/[activityId]/evaluation/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { submitActivityEvaluation } from '@/lib/activity';
 import {
@@ -12,17 +12,35 @@ import {
   ClipboardEdit
 } from 'lucide-react';
 import { submitFeedback } from '@/lib/student';
+import { getCurrentUserId } from '@/lib/auth';
+
+
+
 /* ------------------------------------------------------------------ */
 /* hard-coded student (replace with auth)                             */
 /* ------------------------------------------------------------------ */
-const studentId = 'cac8754c-b80d-4c33-a7c4-1bed9563ee1b';
+//const studentId = 'cac8754c-b80d-4c33-a7c4-1bed9563ee1b';
+
+
+
 
 /* ------------------------------------------------------------------ */
 /* component                                                          */
 /* ------------------------------------------------------------------ */
 export default function ActivityEvaluationPage() {
   const { activityId } = useParams() as { activityId: string };
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
+
+
+    /* ---------- fetch ---------- */
+    useEffect(() => {
+      const load = async () => {
+        const id = await getCurrentUserId();
+        setUserId(id);
+      };
+      load();
+    }, []);
 
   const [form, setForm] = useState({
     score_venue: 0,
@@ -51,10 +69,14 @@ export default function ActivityEvaluationPage() {
   };
 
   const handleSubmit = async () => {
+    if (!userId) {
+      alert('ไม่พบข้อมูลผู้ใช้');
+      return;
+    }
     setSubmitting(true);
     try {
       await submitActivityEvaluation({
-        student_id: studentId,
+        student_id: userId,
         activity_id: activityId,
         ...form,
         score_venue: +form.score_venue,
@@ -64,7 +86,7 @@ export default function ActivityEvaluationPage() {
         score_applicability: +form.score_applicability,
         score_overall: +form.score_overall,
       });
-      await submitFeedback(studentId, activityId);
+      await submitFeedback(userId, activityId);
       alert('ส่งแบบประเมินเรียบร้อย');
       router.back();
     } catch (e: any) {

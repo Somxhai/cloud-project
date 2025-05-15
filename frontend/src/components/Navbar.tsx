@@ -107,6 +107,11 @@ const menu: { href: string; label: string; icon: React.ReactNode }[] = [
     : role === 'professor'
     ? [
         {
+          href: `/professor/profile/${userId}`,
+          label: 'โปรไฟล์ของฉัน',
+          icon: <UserCircle className="w-4 h-4" />,
+        },
+        {
           href: '/professor/dashboard',
           label: 'สรุปนักศึกษา',
           icon: <LayoutDashboard className="w-4 h-4" />,

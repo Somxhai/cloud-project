@@ -1,7 +1,6 @@
 import AWS from "aws-sdk";
 import crypto from "node:crypto";
 import { load as loadEnv } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
-
 await loadEnv({ export: true });
 
 const clientSecret = Deno.env.get("COGNITO_CLIENT_SECRET")!;
@@ -107,3 +106,12 @@ export const confirmUserSignUp = async (username: string, confirmationCode: stri
     throw error;
   }
 };
+
+
+
+
+
+
+
+
+
