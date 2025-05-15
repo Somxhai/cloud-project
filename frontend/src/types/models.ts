@@ -116,6 +116,9 @@ export interface StudentSkill {
   skill_id: UUID;
   skill_level: number; // 1–5
   created_at: string;
+  name_th: string;
+  level: string;
+  updated_at: string;
 }
 
 
@@ -234,6 +237,7 @@ export type ActivitySkillFromApi = {
 
 
 export type CreateStudentInput = {
+  id: string; // UUID
   user_id: string;
   student_code: string;
   full_name: string;
@@ -367,4 +371,15 @@ export type StudentActivityHistory = {
   description: string | null;
   cover_image_url?: string | null;
   skills: StudentActivitySkill[];
+};
+
+
+export type StudentSkillLog = {
+  skill_id: string;
+  name_th: string;
+  level: number;
+  activity_id: string;
+  activity_name: string;
+  note?: string | null;
+  evaluated_at: string; // ISO format
 };

@@ -3,7 +3,9 @@ import {   getAllSkills,
   createSkill,
   updateSkill,
   softDeleteSkill,
-recalculateSkillsFromLog } from '../database/service/skill.ts';
+recalculateSkillsFromLog,
+  getStudentSkills,
+  getStudentSkillLogs } from '../database/service/skill.ts';
 import type { Skill } from '../type/app.ts';
 import { UUIDTypes } from '../lib/uuid.ts';
 export const skillApp = new Hono();
@@ -44,4 +46,18 @@ skillApp.post('/recalculate/:studentId', async (c) => {
   const studentId = c.req.param('studentId');
   await recalculateSkillsFromLog(studentId as UUIDTypes);
   return c.json({ success: true });
+});
+
+
+
+skillApp.get('/student/:id', async (c) => {
+  const studentId = c.req.param('id');
+  const data = await getStudentSkills(studentId as UUIDTypes);
+  return c.json(data);
+});
+
+skillApp.get('/student/:id/log', async (c) => {
+  const studentId = c.req.param('id');
+  const data = await getStudentSkillLogs(studentId as UUIDTypes);
+  return c.json(data);
 });

@@ -243,7 +243,7 @@ export const getProfessorStudentOverview = (
         FROM curriculum_skill cs
         JOIN stu ON stu.curriculum_id = cs.curriculum_id
       ),
-      data AS (
+      data_raw AS (
         SELECT
           stu.id,
           stu.full_name,
@@ -259,13 +259,20 @@ export const getProfessorStudentOverview = (
             WHEN ss.level >= req.required_level THEN 1
             WHEN ss.level IS NULL              THEN 3
             ELSE 2
-          END          AS status
+          END          AS status,
+          ROW_NUMBER() OVER (
+            PARTITION BY stu.id, sk.id
+            ORDER BY ss.level DESC NULLS LAST
+          ) AS rn
         FROM stu
         JOIN curriculum cur ON cur.id = stu.curriculum_id
-        JOIN req ON req.curriculum_id = cur.id
+        JOIN req ON req.curriculum_id = cur.id AND req.skill_id IS NOT NULL
         JOIN skill sk ON sk.id = req.skill_id
         LEFT JOIN student_skill ss
           ON ss.student_id = stu.id AND ss.skill_id = sk.id
+      ),
+      data AS (
+        SELECT * FROM data_raw WHERE rn = 1
       )
       SELECT
         id,
@@ -283,7 +290,7 @@ export const getProfessorStudentOverview = (
             'name_th',  name_th,
             'name_en',  name_en,
             'status',   status
-          )
+          ) ORDER BY name_th
         ) AS skills
       FROM data
       GROUP BY id, full_name, student_code, year, curriculum_name
@@ -292,4 +299,5 @@ export const getProfessorStudentOverview = (
     );
     return rows;
   }, 'Get professor overview failed');
+
 

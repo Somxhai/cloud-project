@@ -50,6 +50,7 @@ export async function getStudentsWithSkillsSummaryByProfessor(professorId: strin
 }
 
 export async function createProfessor(data: {
+  id: string;
   user_id: string;
   full_name: string;
   email?: string;

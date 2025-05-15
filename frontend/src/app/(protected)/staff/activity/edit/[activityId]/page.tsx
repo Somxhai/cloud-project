@@ -75,6 +75,28 @@ export default function EditActivityPage() {
           : value,
     }));
   };
+const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('http://localhost:8000/upload/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error('Upload failed');
+
+    const { url } = await res.json();
+    setForm((prev) => ({ ...prev, cover_image_url: url }));
+  } catch (err) {
+    console.error(err);
+    alert('อัปโหลดรูปภาพไม่สำเร็จ');
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,7 +161,7 @@ export default function EditActivityPage() {
           <h2 className="text-lg font-semibold text-gray-800">ข้อมูลพื้นฐาน</h2>
           <Field label="ชื่อกิจกรรม" name="name" />
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">รายละเอียดสั้น</label>
+            <label className="text-sm font-medium text-gray-700">รายละเอียด</label>
             <textarea
               name="description"
               rows={3}
@@ -149,7 +171,7 @@ export default function EditActivityPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium text-gray-700">รายละเอียดเพิ่มเติม</label>
+            <label className="text-sm font-medium text-gray-700">รายละเอียดการจัดกิจกรรม</label>
             <textarea
               name="details"
               rows={4}
@@ -158,7 +180,19 @@ export default function EditActivityPage() {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
             />
           </div>
-          <Field label="รูปภาพปก (URL)" name="cover_image_url" />
+          <div className="space-y-1">
+  <label className="text-sm font-medium text-gray-700">รูปภาพปก (อัปโหลด)</label>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={handleFileUpload}
+    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
+  />
+  {form.cover_image_url && (
+    <img src={form.cover_image_url} alt="preview" className="h-32 rounded mt-2" />
+  )}
+</div>
+
         </section>
 
         {/* schedule */}

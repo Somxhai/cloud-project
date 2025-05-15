@@ -9,6 +9,7 @@ import {
   MessageSquareText,
   Star,
   User,
+  ClipboardEdit
 } from 'lucide-react';
 import { submitFeedback } from '@/lib/student';
 /* ------------------------------------------------------------------ */
@@ -181,9 +182,9 @@ export default function ActivityEvaluationPage() {
         <button
           disabled={submitting}
           onClick={handleSubmit}
-          className="rounded-full bg-blue-600 px-8 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-60"
+          className="rounded-full flex items-center gap-2 bg-blue-600 px-8 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-60"
         >
-          ✅ ส่งแบบประเมิน
+          <ClipboardEdit size={16} />  ส่งแบบประเมิน
         </button>
       </footer>
     </div>

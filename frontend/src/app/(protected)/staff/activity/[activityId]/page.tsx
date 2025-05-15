@@ -14,6 +14,7 @@ import {
   confirmStudentSkills,
   updateActivityPublish,
   updateActivityStatus,
+  recalculateAmount,
 } from '@/lib/activity';
 import { getAllSkills } from '@/lib/skill';
 import type {
@@ -43,6 +44,7 @@ import {
   Save,
   PauseCircle,
 } from 'lucide-react';
+import {recalculateSkillsFromLogClient} from '@/lib/skill';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 /* -----------------------------------------------------------
@@ -164,6 +166,14 @@ function Stat({ icon: Icon, label, value }: any) {
 
     const refreshed = await getActivityParticipants(activityId);
     setParticipants(refreshed);
+
+    // ✅ เรียกคำนวณจำนวนผู้เข้าร่วมใหม่ และอัปเดต state
+  try {
+    const newAmount = await recalculateAmount(activityId);
+    setActivity((prev) => prev ? { ...prev, amount: newAmount } : prev);
+  } catch (e) {
+    console.error('Error recalculating activity amount:', e);
+  }
   };
 const statusOptions = [
   { value: 0, label: 'เปิดรับสมัคร', icon: <CheckCircle size={16} />, color: 'bg-green-100 text-green-700' },
@@ -237,6 +247,7 @@ function Score({ title, value, highlight=false }: {title:string;value:string;hig
         note: s.note ?? '',
       })),
     );
+    await recalculateSkillsFromLogClient(selectedStudent.id);
     alert('ยืนยันทักษะให้นักศึกษาแล้ว');
     setModalOpen(false);
   };
@@ -812,16 +823,43 @@ function ParticipantList({ title, items, empty, variant, renderActions }: Partic
 
   return (
     <div className="space-y-2">
-      <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-      {items.length === 0 && <p className="text-sm text-gray-500">{empty}</p>}
-      {items.map((p) => (
-        <div key={p.id} className={`flex justify-between rounded border p-3 ${variantClass}`}>
-          <div>
-            {p.full_name} ({p.student_code})
-          </div>
-          {renderActions && <div>{renderActions(p)}</div>}
+      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+        {title.includes('คำขอ') && <ClipboardList size={16} />}
+        {title.includes('ได้รับอนุมัติ') && <CheckCircle size={16} />}
+        {title.includes('ยืนยันเข้าร่วม') && <CalendarCheck2 size={16} />}
+        {title.includes('เข้าร่วมกิจกรรมเรียบร้อย') && <Brain size={16} />}
+        {title.includes('ถูกปฏิเสธ') && <XCircle size={16} />}
+        <span>{title.replace(/[🛎️✅📥🎉❌]/g, '').trim()}</span>
+      </h3>
+
+      {items.length === 0 && (
+        <p className="text-sm text-gray-500 italic">{empty}</p>
+      )}
+
+      {items.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className={`w-full table-auto border text-sm rounded-lg overflow-hidden ${variantClass}`}>
+            <thead>
+              <tr className="bg-gray-100 text-left text-gray-600">
+                <th className="px-4 py-2 font-medium">ชื่อ</th>
+                <th className="px-4 py-2 font-medium whitespace-nowrap">รหัสนักศึกษา</th>
+                <th className="px-4 py-2 font-medium text-center">การดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((p) => (
+                <tr key={p.id} className="border-t border-gray-200 hover:bg-gray-50">
+                  <td className="px-4 py-2 text-gray-800">{p.full_name}</td>
+                  <td className="px-4 py-2 text-gray-700 whitespace-nowrap">{p.student_code}</td>
+                  <td className="px-4 py-2 text-center">
+                    {renderActions && renderActions(p)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      )}
     </div>
   );
 }

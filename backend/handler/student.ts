@@ -6,7 +6,9 @@ import { createStudent,getStudentFullDetail,
   getCompletedActivitiesWithSkills,
   addOrUpdateStudentSkills,
   submitFeedback,
-  getMyActivities
+  getMyActivities,
+  checkStudentCodeExistsService,
+  getStudentByUserId,
  } from '../database/service/student.ts';
 import { UUIDTypes } from '../lib/uuid.ts';
 
@@ -18,7 +20,7 @@ studentApp.get('/', (c) => {
 
 
 
-type CreateStudentInput = Omit<Student, 'id' | 'created_at' | 'updated_at'>;
+type CreateStudentInput = Omit<Student, 'created_at' | 'updated_at'>;
 
 studentApp.post('/', async (c) => {
   const body = await c.req.json();
@@ -89,4 +91,23 @@ studentApp.post('/:studentId/activity/:activityId/feedback', async (c) => {
     const message = e instanceof Error ? e.message : String(e);
     return c.json({ success: false, message }, 500);
   }
+});
+
+
+studentApp.get('/check-code', async (c) => {
+  const student_code = c.req.query('student_code');
+  if (!student_code) {
+    return c.json({ error: 'Missing student_code' }, 400);
+  }
+
+  const exists = await checkStudentCodeExistsService(student_code);
+  return c.json({ exists });
+});
+
+
+studentApp.get('/profile/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!id) return c.text('Missing user ID', 400);
+
+  return await tryCatchService(() => getStudentByUserId(id as UUIDTypes)).then(data => c.json(data));
 });

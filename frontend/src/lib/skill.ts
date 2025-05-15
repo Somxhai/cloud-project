@@ -61,11 +61,33 @@ export async function deleteSkill(id: string): Promise<void> {
 
 
 
-export async function recalculateStudentSkills(studentId: string) {
+
+export async function recalculateSkillsFromLogClient(studentId: string): Promise<void> {
   const res = await fetch(`${BASE_URL}/skill/recalculate/${studentId}`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
 
-  if (!res.ok) throw new Error('ไม่สามารถคำนวณทักษะได้');
-  return await res.json();
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Recalculation failed: ${text}`);
+  }
+}
+
+
+
+// ดึงทักษะปัจจุบัน
+export async function getStudentSkills(studentId: string) {
+  const res = await fetch(`${BASE_URL}/skill/student/${studentId}`);
+  if (!res.ok) throw new Error('โหลดทักษะไม่สำเร็จ');
+  return res.json();
+}
+
+// ดึง log ทักษะ
+export async function getStudentSkillLogs(studentId: string) {
+  const res = await fetch(`${BASE_URL}/skill/student/${studentId}/log`);
+  if (!res.ok) throw new Error('โหลด log ทักษะไม่สำเร็จ');
+  return res.json();
 }

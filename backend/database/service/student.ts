@@ -2,25 +2,26 @@ import { safeQuery } from '../../lib/utils.ts';
 import type { Student,StudentActivityWithActivityInfo } from '../../type/app.ts';
 import { UUIDTypes } from "../../lib/uuid.ts";
 
-type CreateStudentInput = Omit<Student, 'id' | 'created_at' | 'updated_at'>;
+type CreateStudentInput = Omit<Student, 'created_at' | 'updated_at'>;
 
 export const createStudent = (data: CreateStudentInput): Promise<Student> => {
   return safeQuery(async (client) => {
     const result = await client.queryObject<Student>({
       text: `
         INSERT INTO student (
-          user_id, student_code, full_name, faculty, major, year,
+          id, user_id, student_code, full_name, faculty, major, year,
           curriculum_id, profile_picture_url, email, phone,
           gender, birth_date, line_id, student_status, is_active
         )
         VALUES (
           $1, $2, $3, $4, $5, $6,
           $7, $8, $9, $10,
-          $11, $12, $13, $14, $15
+          $11, $12, $13, $14, $15, $16
         )
         RETURNING *;
       `,
       args: [
+        data.id,
         data.user_id,
         data.student_code,
         data.full_name,
@@ -188,3 +189,27 @@ export async function submitFeedback(studentId: UUIDTypes, activityId: UUIDTypes
     );
   }, 'ไม่สามารถบันทึกแบบประเมินกิจกรรมได้');
 }
+
+
+
+
+export const checkStudentCodeExistsService = async (student_code: string): Promise<boolean> => {
+  return await safeQuery(async (client) => {
+    const { rows } = await client.queryObject<{ count: number }>(
+      `SELECT COUNT(*)::int as count FROM student WHERE student_code = $1`,
+      [student_code]
+    );
+    return rows[0].count > 0;
+  }, 'Failed to check student code');
+};
+
+
+export const getStudentByUserId = async (id: UUIDTypes) => {
+  const query = `
+    SELECT * FROM student WHERE id = $1 LIMIT 1;
+  `;
+  return await safeQuery<{ rows: Student[] }>(
+    (client) => client.queryObject(query, [id]),
+    "Failed to get student profile"
+  ).then(res => res.rows[0]);
+};

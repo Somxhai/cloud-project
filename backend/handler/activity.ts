@@ -15,6 +15,7 @@ import { createActivity,addSkillsToActivity,getAllActivitiesWithSkills,getActivi
   confirmStudentSkillsLog,
   updateActivityPublish,
   updateActivityStatus,
+  recalculateActivityAmount
  } from '../database/service/activity.ts'; 
 
 export const activityApp = new Hono();
@@ -277,4 +278,11 @@ activityApp.put('/:id/status', async (c) => {
     console.error(err);
     return c.text('Failed to update status', 500);
   }
+});
+
+
+activityApp.post('/recalculate-amount/:id', async (c) => {
+  const id = c.req.param('id');
+  const amount = await recalculateActivityAmount(id as UUIDTypes);
+  return c.json({ amount });
 });

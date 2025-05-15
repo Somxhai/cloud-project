@@ -1,7 +1,7 @@
 export const CREATE_STUDENT_TABLE = `
 CREATE TABLE IF NOT EXISTS "student" (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL,
+  user_id TEXT NOT NULL,
   student_code TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
   faculty TEXT NOT NULL,

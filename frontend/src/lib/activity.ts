@@ -416,3 +416,23 @@ export async function updateActivityStatus(id:string, status:number){
   });
   if(!res.ok)throw new Error('update status failed');
 }
+
+
+
+// frontend/lib/activity.ts
+export async function recalculateAmount(activityId: string): Promise<number> {
+  const res = await fetch(`${BASE_URL}/activity/recalculate-amount/${activityId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to recalculate amount: ${text}`);
+  }
+
+  const data = await res.json();
+  return data.amount;
+}

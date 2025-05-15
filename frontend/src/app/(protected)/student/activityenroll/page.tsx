@@ -1,4 +1,3 @@
-// src/app/(protected)/student/activityenroll/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,6 +6,12 @@ import Link from 'next/link';
 import { getOpenActivities } from '@/lib/activity';
 import { ActivityWithSkills, Skill } from '@/types/models';
 import { formatDateThai } from '@/lib/utils/date';
+import {
+  CalendarDays,
+  BadgeCheck,
+  Eye,
+  LayoutList,
+} from 'lucide-react';
 
 export default function ActivityEnrollPage() {
   const [activities, setActivities] = useState<ActivityWithSkills[]>([]);
@@ -30,52 +35,15 @@ export default function ActivityEnrollPage() {
   }, []);
 
   const SkillBadge = ({ skill }: { skill: Skill & { skill_level?: number } }) => (
-    <span className="rounded bg-gray-200 px-2 py-1 text-[11px] font-medium text-gray-700">
-      {skill.name_en} ({skill.skill_type}) ระดับ {skill.skill_level ?? '-'}
-    </span>
+<span className="inline-block rounded-full bg-slate-100 px-2 py-1 text-[11px] leading-tight font-medium text-slate-700">
+  {skill.name_en} ({skill.skill_type}) ระดับ {skill.skill_level ?? '-'}
+</span>
+
   );
 
-  if (loading) return <p className="p-4">กำลังโหลดกิจกรรม...</p>;
-  if (error) return <p className="p-4 text-red-600">⚠ {error}</p>;
+  if (loading) return <p className="p-6 text-center text-gray-600">⏳ กำลังโหลดกิจกรรม...</p>;
+  if (error) return <p className="p-6 text-center text-red-600">⚠ {error}</p>;
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-6 space-y-6 bg-[#f5f5f5] min-h-screen">
-      <h1 className="text-2xl font-bold">รายการกิจกรรมที่สามารถเข้าร่วมได้</h1>
-
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {activities
-  .filter((a) => a.is_published) // ✅ แสดงเฉพาะที่เผยแพร่แล้ว
-  .map((a) => (
-          <article
-            key={a.id}
-            className="flex flex-col overflow-hidden rounded-lg shadow-sm ring-1 ring-gray-200 bg-white hover:shadow-md transition"
-          >
-            <div className="relative h-40 w-full bg-gray-100">
-              <Image
-                src="/data-science-and-visualization-with-python.jpg"
-                alt={a.name}
-                fill
-                className="object-cover rounded"
-              />
-            </div>
-
-            <div className="flex flex-1 flex-col p-4">
-              <h2 className="text-sm font-semibold">{a.name}</h2>
-              <p className="mt-1 text-xs text-gray-500">วันที่จัด: {formatDateThai(a.event_date)}</p>
-
-              <p className="mt-2 text-xs font-medium">ทักษะที่ได้รับ:</p>
-              <ul className="mb-4 flex flex-wrap gap-1 mt-1">
-                {a.skills.map((s) => (
-                  <li key={s.id}>
-                    <SkillBadge skill={s} />
-                  </li>
-                ))}
-              </ul>
-
-
-
-              <div className="mt-auto flex items-center justify-between gap-2 text-sm">
-                {(() => {
   const statusMap = {
     0: { label: 'เปิดรับสมัคร', color: 'bg-green-600' },
     1: { label: 'ปิดรับสมัคร', color: 'bg-gray-500' },
@@ -83,27 +51,82 @@ export default function ActivityEnrollPage() {
     3: { label: 'เสร็จสิ้น', color: 'bg-blue-600' },
   } as const;
 
-  const s = statusMap[a.status as 0 | 1 | 2 | 3] || {
-    label: 'ไม่ทราบสถานะ',
-    color: 'bg-gray-400',
-  };
-
   return (
-    <span className={`rounded px-4 py-1 font-semibold text-white text-xs ${s.color}`}>
-      {s.label}
-    </span>
-  );
-})()}
-                <Link
-                  href={`/student/activity/${a.id}`}
-                  className="text-red-600 underline-offset-2 hover:underline"
-                >
-                  รายละเอียด →
-                </Link>
-              </div>
-            </div>
-          </article>
-        ))}
+    <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
+      <header className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+        <LayoutList className="w-6 h-6 text-blue-600" />
+        รายการกิจกรรมที่สามารถเข้าร่วมได้
+      </header>
+
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {activities
+          .filter((a) => a.is_published)
+          .map((a) => {
+            const status = statusMap[a.status as 0 | 1 | 2 | 3] ?? {
+              label: 'ไม่ทราบสถานะ',
+              color: 'bg-gray-400',
+            };
+
+            return (
+              <article
+                key={a.id}
+                className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md ring-1 ring-gray-200 transition"
+              >
+                {/* cover image */}
+                <div className="relative h-40 w-full bg-gray-100">
+                  <Image
+                    src= {a.cover_image_url ||
+              '/data-science-and-visualization-with-python.jpg'}
+                    alt={a.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+
+                {/* content */}
+                <div className="flex flex-1 flex-col p-4 space-y-2 text-sm text-gray-700">
+                  <h2 className="text-base font-semibold text-gray-800 line-clamp-2">
+                    {a.name}
+                  </h2>
+
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <CalendarDays className="w-4 h-4" />
+                    วันที่จัด: {formatDateThai(a.event_date)}
+                  </div>
+
+                  <div className="mt-2 text-xs font-medium text-gray-600">
+                    <div className="flex items-center gap-1 mb-1">
+                      <BadgeCheck className="w-4 h-4" />
+                      ทักษะที่ได้รับ:
+                    </div>
+                      <ul className="flex flex-wrap gap-2 mt-1">
+                        {a.skills.map((s) => (
+                          <li key={s.id}>
+                            <SkillBadge skill={s} />
+                          </li>
+                        ))}
+                      </ul>
+
+                  </div>
+
+                  <div className="mt-auto flex justify-between items-center pt-4">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold text-white ${status.color}`}
+                    >
+                      {status.label}
+                    </span>
+                    <Link
+                      href={`/student/activity/${a.id}`}
+                      className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      <Eye className="w-4 h-4" />
+                      รายละเอียด
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
       </div>
     </div>
   );

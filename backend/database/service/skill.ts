@@ -105,13 +105,46 @@ export const recalculateSkillsFromLog = async (
       [studentId]
     );
 
-    // 3. เพิ่ม skill ที่คำนวณใหม่เข้าไป
+    // 3. เพิ่ม skill ที่คำนวณใหม่เข้าไป (จำกัด level สูงสุดไม่เกิน 5)
     for (const [skill_id, totalLevel] of skillMap.entries()) {
+      const level = Math.min(5, Math.max(1, totalLevel)); // ✅ Clamp ระดับให้อยู่ใน 1-5
       await client.queryObject(
         `INSERT INTO student_skill (student_id, skill_id, level)
          VALUES ($1, $2, $3)`,
-        [studentId, skill_id, totalLevel]
+        [studentId, skill_id, level]
       );
     }
   }, "Failed to recalculate student skills");
 };
+
+
+
+
+// ปัจจุบันทักษะของนักศึกษา
+// deno-lint-ignore no-explicit-any
+export const getStudentSkills = (studentId: UUIDTypes): Promise<any[]> =>
+  safeQuery(async (client) => {
+    const result = await client.queryObject(`
+      SELECT ss.skill_id, s.name_th, s.name_en, s.skill_type, ss.level, ss.updated_at
+      FROM student_skill ss
+      JOIN skill s ON s.id = ss.skill_id
+      WHERE ss.student_id = $1
+      ORDER BY ss.updated_at DESC
+    `, [studentId]);
+    return result.rows;
+  }, 'Failed to fetch student skills');
+
+// ประวัติทักษะที่ได้จากกิจกรรม
+// deno-lint-ignore no-explicit-any
+export const getStudentSkillLogs = (studentId: UUIDTypes): Promise<any[]> =>
+  safeQuery(async (client) => {
+    const result = await client.queryObject(`
+      SELECT ssl.skill_id, s.name_th, ssl.level, a.name AS activity_name, ssl.note, ssl.evaluated_at
+      FROM student_skill_log ssl
+      JOIN skill s ON s.id = ssl.skill_id
+      LEFT JOIN activity a ON ssl.obtained_from_activity = a.id
+      WHERE ssl.student_id = $1
+      ORDER BY ssl.evaluated_at DESC
+    `, [studentId]);
+    return result.rows;
+  }, 'Failed to fetch student skill logs');

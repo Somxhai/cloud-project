@@ -22,10 +22,21 @@ export default function RootLayout({
   const pathname = usePathname();
 
   // ระบุ path ที่ไม่ต้องการแสดง Navbar
-  const hideNavbarRoutes = ['/auth/signin', '/auth/signup', '/auth/confirm'];
-  const shouldShowNavbar = !hideNavbarRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+const hideNavbarRoutes = [
+  '/', // ซ่อน Navbar เฉพาะหน้าแรก
+  '/auth/signin',
+  '/auth/signup',
+  '/auth/confirm',
+  '/auth/force-signout',
+  '/auth/professor-signup',
+  '/auth/staff-signup',
+  '/auth/student-signup',
+];
+
+const shouldShowNavbar = !hideNavbarRoutes.some((route) =>
+  pathname === route || pathname.startsWith(route + '/')
+);
+
 
   return (
     <html lang="th" className={`${notoThai.variable} bg-[#f5f5f5] min-h-screen`} >

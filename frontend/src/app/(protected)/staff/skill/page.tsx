@@ -19,6 +19,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Search,
+  ArrowRightLeft, ArrowLeftRight
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -341,22 +342,33 @@ export default function SkillManagementPage() {
 
             {/* type & active */}
             <div className="flex items-center justify-between gap-4">
-              <button
-                onClick={() =>
-                  setForm({
-                    ...form,
-                    skill_type: form.skill_type === 'soft' ? 'hard' : 'soft',
-                  })
-                }
-                className={`flex-1 rounded-full py-1 text-sm font-medium shadow
-                  ${
-                    form.skill_type === 'soft'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-green-100 text-green-700'
-                  }`}
-              >
-                {form.skill_type === 'soft' ? 'Soft Skill' : 'Hard Skill'}
-              </button>
+<button
+  onClick={() =>
+    setForm({
+      ...form,
+      skill_type: form.skill_type === 'soft' ? 'hard' : 'soft',
+    })
+  }
+  className={`flex-1 flex items-center justify-center gap-2 rounded-full py-1 text-sm font-medium shadow
+    ${
+      form.skill_type === 'soft'
+        ? 'bg-purple-100 text-purple-700'
+        : 'bg-green-100 text-green-700'
+    }`}
+>
+  {form.skill_type === 'soft' ? (
+    <>
+      <ArrowRightLeft size={16} />
+      Soft Skill
+    </>
+  ) : (
+    <>
+      <ArrowLeftRight size={16} />
+      Hard Skill
+    </>
+  )}
+</button>
+
 
               <button
                 onClick={() => setForm({ ...form, is_active: !form.is_active })}

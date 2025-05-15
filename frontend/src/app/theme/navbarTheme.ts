@@ -1,4 +1,6 @@
 // src/theme/navbarTheme.ts
+
+/*
 import { createTheme } from 'flowbite-react';
 export const navTheme = createTheme({
   navbar: {
@@ -11,3 +13,4 @@ export const navTheme = createTheme({
     },
   },
 }).navbar;
+*/

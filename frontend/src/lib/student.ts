@@ -288,3 +288,12 @@ export async function submitFeedback(studentId: string, activityId: string): Pro
     throw new Error(error.message || 'ไม่สามารถส่งแบบประเมินได้');
   }
 }
+
+
+
+export const checkStudentCodeExists = async (studentCode: string): Promise<boolean> => {
+  const res = await fetch(`${BASE_URL}/student/check-code?student_code=${encodeURIComponent(studentCode)}`);
+  if (!res.ok) throw new Error('Failed to check student code');
+  const data = await res.json();
+  return data.exists;
+};

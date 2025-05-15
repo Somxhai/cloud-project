@@ -494,3 +494,21 @@ export const updateActivityStatus = (id: UUIDTypes, st: number) =>
   );
 
 
+export function recalculateActivityAmount(activityId: UUIDTypes): Promise<number> {
+  return safeQuery(async (client) => {
+    const result = await client.queryObject<{ count: number }>(
+      `SELECT COUNT(*)::int AS count
+       FROM student_activity
+       WHERE activity_id = $1 AND status IN (1, 3)`,
+      [activityId]
+    );
+    const amount = result.rows[0]?.count || 0;
+
+    await client.queryObject(
+      `UPDATE activity SET amount = $1 WHERE id = $2`,
+      [amount, activityId]
+    );
+
+    return amount;
+  }, 'Failed to recalculate activity amount');
+}

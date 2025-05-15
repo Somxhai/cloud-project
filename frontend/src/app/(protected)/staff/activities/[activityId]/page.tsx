@@ -50,7 +50,7 @@ export default function ActivityParticipantsPage() {
     }
   };
 
-  const statusText = {
+  const statusText: { [key: number]: string } = {
     0: 'รอยืนยัน',
     1: 'อนุมัติแล้ว',
     2: 'ไม่อนุมัติ',

@@ -63,18 +63,19 @@ export const getStudentsWithSkillComparison = async (professorId: string): Promi
 
 
 export const createProfessor = async (
-  data: Omit<Professor, 'id' | 'created_at' | 'updated_at' | 'is_active'>
+  data: Omit<Professor, 'created_at' | 'updated_at' | 'is_active'>
 ): Promise<Professor> => {
   return await safeQuery(async (client) => {
     const result = await client.queryObject<Professor>({
       text: `
         INSERT INTO professor (
-          user_id, full_name, email, phone, department,
+          id, user_id, full_name, email, phone, department,
           faculty, position, profile_picture_url
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *;
       `,
       args: [
+        data.id,
         data.user_id,
         data.full_name,
         data.email ?? null,
@@ -112,4 +113,16 @@ export const getProfessorById = async (id: string): Promise<Professor | null> =>
     });
     return res.rows[0] ?? null;
   }, 'Failed to get professor');
+};
+
+
+
+export const getProfessorByUserId = async (userId: UUIDTypes) => {
+  const query = `
+    SELECT * FROM professor WHERE id = $1 LIMIT 1;
+  `;
+  return await safeQuery<{ rows: Professor[] }>(
+    (client) => client.queryObject(query, [userId]),
+    "Failed to get professor profile"
+  ).then(res => res.rows[0]);
 };

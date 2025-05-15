@@ -37,9 +37,17 @@ export async function createProfessor(professor: {
 
 export async function getStudentProfile(userId: string): Promise<StudentDetail> {
   const res = await fetch(`${BASE_URL}/student/profile/${userId}`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  if (!res.ok) {
+    const text = await res.text();
+    console.error('API error:', res.status, text);
+    throw new Error(text || 'Unknown error');
+  }
+
+  // ✅ แก้ตรงนี้
+  return await res.json();
 }
+
+
 
 export async function getProfessorProfile(userId: string): Promise<ProfessorDetail> {
   const res = await fetch(`${BASE_URL}/professor/profile/${userId}`);

@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import { tryCatchService } from '../lib/utils.ts';
-import { getStudentsWithSkillComparison,createProfessor, getAllProfessors,getProfessorById} from '../database/service/professor.ts';
+import { getStudentsWithSkillComparison,createProfessor, getAllProfessors,getProfessorById,getProfessorByUserId} from '../database/service/professor.ts';
 import {
   getStudentsByProfessor,
   getStudentsWithoutProfessor,
   addStudentToProfessor,
   removeStudentFromProfessor,
+  
 } from "../database/service/professor_student.ts";
-
+import { UUIDTypes } from '../lib/uuid.ts';
 export const professorApp = new Hono();
 
 professorApp.get('/', (c) => {
@@ -91,3 +92,13 @@ professorApp.get('/:id', async (c) => {
   const data = await getProfessorById(id);
   return data ? c.json(data) : c.notFound();
 });
+
+
+professorApp.get('/profile/:userId', async (c) => {
+  const userId = c.req.param('userId');
+  if (!userId) return c.text('Missing user ID', 400);
+
+  return await tryCatchService(() => getProfessorByUserId(userId as UUIDTypes)).then(data => c.json(data));
+});
+
+

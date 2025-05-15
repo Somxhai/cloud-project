@@ -16,6 +16,8 @@ import { cognitoApp } from './handler/cognito.ts';
 import { authApp } from './handler/authHandler.ts';
 import { studentActivityApp } from './handler/student_activity.ts';
 import {progressApp}  from './handler/skillProgress.ts';
+import { uploadApp } from './handler/upload.ts'; // ✅ เพิ่ม
+
 const app = new Hono();
 
 // Middleware: CORS สำหรับ frontend
@@ -47,6 +49,7 @@ app.route('/evaluation', evaluationApp);
 app.route('/cognito', cognitoApp);
 app.route('/auth', authApp);
 app.route('/progress', progressApp);
+app.route('/upload', uploadApp);
 
 app.route('/student-activity', studentActivityApp);
 // Start server

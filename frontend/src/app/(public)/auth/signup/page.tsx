@@ -61,7 +61,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] px-4">
       <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-md space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold">สมัครสมาชิก</h1>

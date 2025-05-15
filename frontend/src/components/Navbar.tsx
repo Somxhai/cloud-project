@@ -49,7 +49,7 @@ export default function MainNavbar() {
         console.log('Session token payload:', token);
 
         const sub = token?.sub;
-        const displayName = token?.name;
+        const displayName = token?.['cognito:username'];
         const rawGroups = token?.['cognito:groups'];
 
         if (sub) setUserId(sub);
@@ -68,7 +68,7 @@ export default function MainNavbar() {
           setRole(null);
         }
 
-        setRole('staff'); // ✅ สำหรับทดสอบ
+        //setRole('staff'); // ✅ สำหรับทดสอบ
 
 
       } catch (err) {
@@ -115,7 +115,7 @@ const menu: { href: string; label: string; icon: React.ReactNode }[] = [
     : role === 'staff'
     ? [
         {
-          href: '/staff/activities',
+          href: '/staff/activity',
           label: 'จัดการกิจกรรม',
           icon: <ActivitySquare className="w-4 h-4" />,
         },
@@ -192,8 +192,8 @@ const normalCls =
               href="/auth/profile"
               className="flex flex-col text-right text-sm leading-tight hover:underline"
             >
-              <span className="font-semibold text-gray-900">{nameA}</span>
-              <span className="text-gray-500">{roleA}</span>
+              <span className="font-semibold text-gray-900">{name}</span>
+              <span className="text-gray-500">{role}</span>
             </Link>
           </div>
         </div>

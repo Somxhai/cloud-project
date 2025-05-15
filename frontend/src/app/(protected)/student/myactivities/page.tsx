@@ -13,9 +13,25 @@ import {
   FileCheck,
   AlertCircle,
 } from 'lucide-react';
+import {
+  CalendarDays,
+  CircleDot,
+  CheckCircle,
+  ThumbsUp,
+  ThumbsDown,
+  FileText,
+  FileWarning,
+} from 'lucide-react';
 import { getMyActivities } from '@/lib/student';
 import type { StudentActivityWithActivityInfo } from '@/types/models';
 import { formatDateThai } from '@/lib/utils/date';
+
+
+
+
+import { fetchAuthSession } from '@aws-amplify/auth';
+import '@/lib/amplifyConfig';
+
 
 type TabKey =
   | 'all'
@@ -93,10 +109,63 @@ export default function MyActivitiesPage() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('all');
 
-  const studentId = 'cac8754c-b80d-4c33-a7c4-1bed9563ee1b';
+  //const studentId = 'cac8754c-b80d-4c33-a7c4-1bed9563ee1b';
+
+
+  /*
+    Cognito session
+  */
+    const [userId, setUserId] = useState<string | null>(null);
+    let [role, setRole] = useState<'student' | 'professor' | 'staff' | null>(null);
+    const [name, setName] = useState<string | null>(null);
+    const [sessionLoading, setSessionLoading] = useState(true);
+    useEffect(() => {
+      const loadSessionData = async () => {
+        try {
+          const session = await fetchAuthSession();
+          const token = session.tokens?.idToken?.payload;
+  
+          console.log('Session token payload:', token);
+  
+          const sub = token?.sub;
+          const displayName = token?.name;
+          const rawGroups = token?.['cognito:groups'];
+  
+          if (sub) setUserId(sub);
+          if (typeof displayName === 'string') setName(displayName);
+          console.log('userId:', sub);
+  
+          let roleFromGroup: string | undefined = undefined;
+          if (Array.isArray(rawGroups) && typeof rawGroups[0] === 'string') {
+            roleFromGroup = rawGroups[0];
+          } else if (typeof rawGroups === 'string') {
+            roleFromGroup = rawGroups;
+          }
+  
+          if (roleFromGroup && ['student', 'professor', 'staff'].includes(roleFromGroup)) {
+            setRole(roleFromGroup as 'student' | 'professor' | 'staff');
+          } else {
+            setRole(null);
+          }
+        } catch (err) {
+          console.warn('ไม่พบ session หรือยังไม่ได้ login:', err);
+          setRole(null);
+        } finally {
+      setSessionLoading(false);
+    }
+      };
+  
+      loadSessionData();
+    }, []);
+
+
+  /*
+    Cognito session
+  */
 
   useEffect(() => {
-    if (!studentId) {
+    if (sessionLoading) return;
+    if (!userId) {
       setError('ไม่พบรหัสนักศึกษา');
       setLoading(false);
       return;
@@ -104,7 +173,7 @@ export default function MyActivitiesPage() {
 
     (async () => {
       try {
-        const res = await getMyActivities(studentId);
+        const res = await getMyActivities(userId);
         setActivities(res);
       } catch (e: any) {
         setError(e.message || 'โหลดกิจกรรมล้มเหลว');
@@ -112,14 +181,14 @@ export default function MyActivitiesPage() {
         setLoading(false);
       }
     })();
-  }, [studentId]);
+  }, [userId]);
 
   const filtered = activities.filter((a) =>
     statusMeta.find((m) => m.key === tab)?.filter(a)
   );
 
   return (
-    <div className="bg-[#f9f9f9] min-h-screen py-10 px-4">
+    <div className=" min-h-screen py-10 px-4">
       <div className="mx-auto max-w-5xl space-y-8">
         <header className="space-y-4">
           <h1 className="text-3xl font-bold text-gray-800">กิจกรรมของฉัน</h1>
@@ -154,7 +223,7 @@ export default function MyActivitiesPage() {
         ) : filtered.length === 0 ? (
           <p className="text-center text-gray-500">ไม่พบกิจกรรมในหมวดนี้</p>
         ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <ul className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {filtered.map((a) => {
               const showExtra =
                 (a.status === 1 || a.status === 3) && a.activity_status === 3;
@@ -162,20 +231,24 @@ export default function MyActivitiesPage() {
               return (
 <li
   key={a.id}
-  className="flex flex-col justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md"
+  className="flex flex-col justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
 >
-  <div className="space-y-2">
-    <h2 className="line-clamp-1 text-lg font-semibold text-gray-800">
-      {a.activity_name}
-    </h2>
-    <p className="text-sm text-gray-600">📅 {formatDateThai(a.event_date)}</p>
+  <div className="space-y-3">
+    <h2 className="line-clamp-1 text-lg font-bold text-gray-800">{a.activity_name}</h2>
+
+    <div className="flex items-center gap-2 text-sm text-gray-600">
+      <CalendarDays className="w-4 h-4 text-gray-400" />
+      {formatDateThai(a.event_date)}
+    </div>
+
     <p className="text-sm text-gray-500 line-clamp-2">{a.activity_description}</p>
 
     {/* สถานะต่าง ๆ */}
-    <div className="mt-2 space-y-1 text-sm text-gray-700">
-      <p>
-        <span className="font-medium text-gray-500">สถานะกิจกรรม:</span>{' '}
-        <span className="font-semibold">
+    <div className="mt-2 grid gap-2 text-sm text-gray-700">
+      <div className="flex items-center gap-2">
+        <CircleDot className="w-4 h-4 text-blue-500" />
+        สถานะกิจกรรม:
+        <span className="font-medium">
           {{
             0: 'เปิดรับ',
             1: 'ปิดรับ',
@@ -183,10 +256,17 @@ export default function MyActivitiesPage() {
             3: 'เสร็จสิ้น',
           }[a.activity_status]}
         </span>
-      </p>
-      <p>
-        <span className="font-medium text-gray-500">สถานะการเข้าร่วม:</span>{' '}
-        <span className="font-semibold">
+      </div>
+      <div className="flex items-center gap-2">
+        {a.status === 1 || a.status === 3 ? (
+          <ThumbsUp className="w-4 h-4 text-emerald-500" />
+        ) : a.status === 2 ? (
+          <ThumbsDown className="w-4 h-4 text-red-500" />
+        ) : (
+          <CircleDot className="w-4 h-4 text-gray-400" />
+        )}
+        สถานะการเข้าร่วม:
+        <span className="font-medium">
           {{
             0: 'รออนุมัติ',
             1: 'อนุมัติแล้ว',
@@ -194,41 +274,52 @@ export default function MyActivitiesPage() {
             3: 'เข้าร่วมแล้ว',
           }[a.status]}
         </span>
-      </p>
-      <p>
-        <span className="font-medium text-gray-500">สถานะการยืนยัน:</span>{' '}
-        <span className="font-semibold">
+      </div>
+      <div className="flex items-center gap-2">
+        <CircleDot className="w-4 h-4 text-indigo-500" />
+        สถานะการยืนยัน:
+        <span className="font-medium">
           {{
             0: 'ยังไม่ยืนยัน',
             1: 'ยืนยันแล้ว',
             2: 'ไม่เข้าร่วม',
           }[a.confirmation_status ?? -1] ?? '—'}
         </span>
-      </p>
+      </div>
     </div>
 
-    {/* แสดงสถานะการประเมิน/feedback หากกิจกรรมจบ */}
+    {/* การประเมิน/feedback */}
     {showExtra && (
-      <div className="mt-2 space-y-1 text-sm text-gray-600">
-        <p>
-          สถานะการประเมินทักษะ:{' '}
-          <strong className={a.evaluation_status === 1 ? 'text-green-600' : 'text-red-500'}>
-            {a.evaluation_status === 1 ? '✔️ ประเมินแล้ว' : '❌ ยังไม่ประเมิน'}
-          </strong>
-        </p>
-        <p>
-          แบบประเมินกิจกรรม:{' '}
-          <strong className={a.feedback_submitted ? 'text-green-600' : 'text-red-500'}>
-            {a.feedback_submitted ? '✔️ ส่งแล้ว' : '❌ ยังไม่ได้ส่ง'}
-          </strong>
-        </p>
+      <div className="mt-3 grid gap-2 text-sm">
+        <div className="flex items-center gap-2">
+          {a.evaluation_status === 1 ? (
+            <CheckCircle className="w-4 h-4 text-green-600" />
+          ) : (
+            <XCircle className="w-4 h-4 text-red-500" />
+          )}
+          สถานะการประเมินทักษะ:
+          <span className="font-medium">
+            {a.evaluation_status === 1 ? 'ประเมินแล้ว' : 'ยังไม่ประเมิน'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {a.feedback_submitted ? (
+            <FileText className="w-4 h-4 text-green-600" />
+          ) : (
+            <FileWarning className="w-4 h-4 text-red-500" />
+          )}
+          แบบประเมินกิจกรรม:
+          <span className="font-medium">
+            {a.feedback_submitted ? 'ส่งแล้ว' : 'ยังไม่ได้ส่ง'}
+          </span>
+        </div>
       </div>
     )}
   </div>
 
   <Link
     href={`/student/activity/${a.activity_id}`}
-    className="mt-2 self-end rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
+    className="mt-4 self-end rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow hover:bg-blue-700"
   >
     ดูรายละเอียด
   </Link>
