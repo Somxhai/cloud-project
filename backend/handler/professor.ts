@@ -23,12 +23,12 @@ professorApp.get("/", (c) => {
   });
 });
 
+professorApp.use(cognitoMiddleware);
 // GET: รายชื่ออาจารย์ทั้งหมด
 professorApp.get("/staff/professors", async (c) => {
   const data = await tryCatchService(() => getAllProfessors());
   return c.json(data);
 });
-professorApp.use(cognitoMiddleware);
 
 professorApp.get("/:id/students/skills", async (c) => {
   const professorId = c.req.param("id");
