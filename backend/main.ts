@@ -13,7 +13,7 @@ import { skillApp } from "./handler/skill.ts";
 import { curriculumApp } from "./handler/curriculum.ts";
 import { evaluationApp } from "./handler/evaluation.ts";
 import { cognitoApp } from "./handler/cognito.ts";
-import { authApp } from "./handler/authHandler.ts";
+//import { authApp } from "./database/service/authHandler.ts";
 import { studentActivityApp } from "./handler/student_activity.ts";
 import { progressApp } from "./handler/skillProgress.ts";
 import { uploadApp } from "./handler/upload.ts"; // ✅ เพิ่ม
@@ -50,7 +50,7 @@ app.route("/student", studentApp);
 app.route("/curriculum", curriculumApp);
 app.route("/evaluation", evaluationApp);
 app.route("/cognito", cognitoApp);
-app.route("/auth", authApp);
+//app.route("/auth", authApp);
 app.route("/progress", progressApp);
 app.route("/upload", uploadApp);
 

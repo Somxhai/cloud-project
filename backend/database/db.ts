@@ -1,12 +1,13 @@
 // db.ts
 import "https://deno.land/x/dotenv@v3.2.2/load.ts"; // โหลด env
-
 import {
   Pool,
   PoolClient,
 } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 
+const ca = Deno.readTextFileSync(new URL("./us-east-1-bundle.pem", import.meta.url));
 import { setupDatabase } from "../lib/db.ts";
+
 
 // สร้าง Pool instance
 export const pool = new Pool({
@@ -16,7 +17,8 @@ export const pool = new Pool({
   password: Deno.env.get("PGPASSWORD") || "",
   database: Deno.env.get("PGDATABASE") || "postgres",
   tls: {
-  enabled: false,
+  enforce: true,
+  caCertificates: [ca],
 },
 // ✅ สำหรับ local, ถ้าใช้ RDS ค่อยเปิด `tls: { enabled: true }`
 }, 3); // จำนวน max connections

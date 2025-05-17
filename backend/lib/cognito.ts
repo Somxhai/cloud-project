@@ -80,16 +80,19 @@ export const loginUserInCognito = async (username: string, password: string) => 
       },
     }).promise();
 
-    const token = result.AuthenticationResult?.IdToken;
-    if (!token) throw new Error("Failed to get token from Cognito.");
+    const idToken = result.AuthenticationResult?.IdToken;
+    const accessToken = result.AuthenticationResult?.AccessToken;
 
-    console.log("✅ Login successful. ID Token:", token);
-    return token;
+    if (!accessToken) throw new Error("Failed to get access token from Cognito.");
+
+    console.log("✅ Login successful.");
+    return { idToken, accessToken }; // ✅ ส่งคืนทั้งคู่
   } catch (error) {
     console.error("❌ Error logging in:", error);
     throw error;
   }
 };
+
 
 export const confirmUserSignUp = async (username: string, confirmationCode: string) => {
   try {

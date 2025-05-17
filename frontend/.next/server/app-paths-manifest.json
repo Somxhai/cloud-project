@@ -1,11 +1,12 @@
 {
-  "/(protected)/staff/activity/[activityId]/page": "app/(protected)/staff/activity/[activityId]/page.js",
   "/(protected)/staff/activity/page": "app/(protected)/staff/activity/page.js",
-  "/(protected)/student/activity/[activityId]/evaluate/page": "app/(protected)/student/activity/[activityId]/evaluate/page.js",
-  "/(protected)/student/activity/[activityId]/page": "app/(protected)/student/activity/[activityId]/page.js",
-  "/(protected)/student/activityenroll/page": "app/(protected)/student/activityenroll/page.js",
-  "/(protected)/student/myactivities/page": "app/(protected)/student/myactivities/page.js",
+  "/(protected)/staff/curriculum/[id]/page": "app/(protected)/staff/curriculum/[id]/page.js",
+  "/(protected)/staff/curriculum/new/page": "app/(protected)/staff/curriculum/new/page.js",
+  "/(protected)/staff/curriculum/page": "app/(protected)/staff/curriculum/page.js",
+  "/(protected)/staff/professorstudents/page": "app/(protected)/staff/professorstudents/page.js",
+  "/(protected)/staff/skill/page": "app/(protected)/staff/skill/page.js",
   "/(public)/auth/profile/page": "app/(public)/auth/profile/page.js",
   "/(public)/auth/signin/page": "app/(public)/auth/signin/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js"
+  "/(public)/auth/staff-signup/page": "app/(public)/auth/staff-signup/page.js",
+  "/page": "app/page.js"
 }

@@ -1,13 +1,13 @@
 import { Hono } from "hono";
 import { addUserToGroup } from "../database/service/cognito.ts"; // ปรับเส้นทางให้ถูกต้อง
-import { cognitoMiddleware } from "../middleware.ts";
+//import { cognitoMiddleware } from "../middleware.ts";
 export const cognitoApp = new Hono();
 
 cognitoApp.get("/", (c) => {
   return c.json({ message: "GET /cognito" });
 });
 
-cognitoApp.use(cognitoMiddleware);
+//cognitoApp.use(cognitoMiddleware);
 
 cognitoApp.post("/add-to-group", async (c) => {
   const { username, groupName } = await c.req.json();

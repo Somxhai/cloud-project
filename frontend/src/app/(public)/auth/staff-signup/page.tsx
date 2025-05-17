@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ArrowLeft,
 } from 'lucide-react';
+import { getAuthHeaders } from '@/lib/utils/auth';
 
 export default function StaffSignUpPage() {
   const router = useRouter();

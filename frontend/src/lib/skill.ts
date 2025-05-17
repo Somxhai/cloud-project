@@ -7,7 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 /*
 async function getAuthHeaders() {
   const session = await fetchAuthSession();
-  const idToken = session.tokens?.idToken?.toString();
+  const idToken = session.tokens?.accessToken?.toString();
   if (!idToken) throw new Error("ไม่พบ token");
   return {
     Authorization: `Bearer ${idToken}`,
