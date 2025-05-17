@@ -3,7 +3,6 @@ import { ContentfulStatusCode } from "hono/utils/http-status";
 import { PoolClient } from "https://deno.land/x/postgres@v0.19.3/mod.ts"; // ✅ เปลี่ยนตรงนี้
 import { pool } from "../database/db.ts";
 
-
 /**
  * Wraps an async function and throws a consistent HTTPException if it fails.
  */
@@ -41,6 +40,8 @@ export const safeQuery = async <T>(
     return await connect(fn);
   } catch (e) {
     console.error(`${errorMessage}:`, e);
-    throw new Error(`${errorMessage}: ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(
+      `${errorMessage}: ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 };
