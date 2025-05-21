@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS "student_activity" (
   confirmed_at TIMESTAMPTZ,
   
   evaluation_status INT DEFAULT 0 CHECK (evaluation_status IN (0, 1)),
-  attended BOOLEAN DEFAULT FALSE,
+  attended BOOLEAN,
   feedback_submitted BOOLEAN DEFAULT FALSE,
 
   participated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

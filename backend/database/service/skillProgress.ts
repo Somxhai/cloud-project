@@ -202,6 +202,7 @@ export const getStudentActivityHistory = (
         a.name,
         a.event_date,
         a.description,
+        a.cover_image_url,
         json_agg(
           json_build_object(
             'skill_id', sk.id,

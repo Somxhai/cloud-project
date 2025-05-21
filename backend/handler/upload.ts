@@ -25,7 +25,6 @@ const s3 = new S3Client({
 
 // ---------- Route ----------
 uploadApp.post("/upload-image", async (c) => {
-  // ⬇️ ใช้ c.req (HonoRequest) ได้เลย
   const form = await multiParser(c.req.raw);
 
   // ---- ดึงไฟล์ ไม่ว่า files จะเป็น Array หรือ Object ----

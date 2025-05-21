@@ -10,7 +10,7 @@ import {
 } from '@aws-amplify/auth';
 import { getStudentProfile, getProfessorProfile } from '@/lib/user'; // ✅ API Client ที่คุณต้องสร้าง
 import '@/lib/amplifyConfig';
-
+import Loading from '@/components/Loading';
 type UserInfo = {
   username?: string;
   email?: string;
@@ -89,9 +89,7 @@ export default function ProfilePage() {
     router.push('/auth/signin');
   };
 
-  if (loading) {
-    return <div className="p-6 text-center">กำลังโหลดข้อมูลโปรไฟล์...</div>;
-  }
+  if (loading) return <Loading />;
 
   return (
     <div className="p-6 max-w-xl mx-auto space-y-4">

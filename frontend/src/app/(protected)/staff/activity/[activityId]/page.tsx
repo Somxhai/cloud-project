@@ -12,9 +12,9 @@ import {
   updateActivitySkills,
   addSkillsToStudent,
   confirmStudentSkills,
-  updateActivityPublish,
-  updateActivityStatus,
   recalculateAmount,
+  saveActivityChanges,
+  updateAttendance
 } from '@/lib/activity';
 import { getAllSkills } from '@/lib/skill';
 import type {
@@ -87,8 +87,9 @@ const [openEvaluations, setOpenEvaluations] = useState<Record<string, boolean>>(
   const pending = participants.filter((p) => p.status === 0);
   const approved = participants.filter((p) => p.status === 1);
   const rejected = participants.filter((p) => p.status === 2);
-  const confirmed = approved.filter((p) => p.confirmation_status === 1);
-  const completed = participants.filter((p) => p.status === 3);
+  const confirmed = approved.filter((p) => p.confirmation_status === 1 && p.attended === null);
+  const completed = participants.filter((p) => p.status === 3 && p.attended === true);
+  const notattending = participants.filter((p) => p.attended === false);
   const readOnly = !!activity && (activity.is_published || [1, 2, 3].includes(activity.status));
 function StatsCard({
   pending, approved, confirmed, completed, rejected,
@@ -151,6 +152,19 @@ function Stat({ icon: Icon, label, value }: any) {
     load();
   }, [activityId]);
 
+
+  const handleMarkAbsent = async (studentId: string, activityId: string) => {
+  if (!confirm('ยืนยันว่าไม่มาเข้าร่วมกิจกรรมใช่หรือไม่?')) return;
+
+  try {
+    await updateAttendance({ student_id: studentId, activity_id: activityId, attended: false });
+    alert('บันทึกเรียบร้อยแล้ว');
+    // refresh or refetch ได้ที่นี่
+  } catch (error) {
+    console.error(error);
+    alert('เกิดข้อผิดพลาด');
+  }
+};
   /* -----------------------------------------------------------
    * Helper: update participant status
    * ---------------------------------------------------------*/
@@ -247,6 +261,8 @@ function Score({ title, value, highlight=false }: {title:string;value:string;hig
         note: s.note ?? '',
       })),
     );
+    await updateAttendance({
+      student_id: selectedStudent.id, activity_id: activityId, attended: true })
     await recalculateSkillsFromLogClient(selectedStudent.id);
     alert('ยืนยันทักษะให้นักศึกษาแล้ว');
     setModalOpen(false);
@@ -460,15 +476,12 @@ function Score({ title, value, highlight=false }: {title:string;value:string;hig
     <div className="pt-2">
       <button
         onClick={async () => {
-          await Promise.all([
-            fetch(`/activity/${activity.id}/confirm-days`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ days: activity.confirmation_days_before_event }),
-            }),
-            updateActivityPublish(activity.id, activity.is_published),
-            updateActivityStatus(activity.id, activity.status),
-          ]);
+          await saveActivityChanges(
+            activity.id,
+            activity.confirmation_days_before_event,
+            activity.is_published,
+            activity.status
+          );
           alert('บันทึกแล้ว');
         }}
         className="inline-flex items-center gap-1 rounded bg-blue-600 px-4 py-2 text-sm text-white shadow hover:bg-blue-700"
@@ -544,28 +557,44 @@ function Score({ title, value, highlight=false }: {title:string;value:string;hig
             )}
           />
 
-          <ParticipantList
-            title="🛎️ ยืนยันเข้าร่วมกิจกรรมแล้ว"
-            items={confirmed}
-            empty="ยังไม่มีผู้ยืนยัน"
-            renderActions={(p) =>
-              p.evaluation_status === 1 ? (
-                <span className="text-sm text-green-600">✅ ยืนยันทักษะแล้ว</span>
-              ) : (
-                <button
-                  onClick={() => openSkillModal(p.student_id, p.full_name)}
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  📝 ยืนยันทักษะ
-                </button>
-              )
-            }
-          />
+<ParticipantList
+  title="🛎️ ยืนยันเข้าร่วมกิจกรรมแล้ว"
+  items={confirmed}
+  empty="ยังไม่มีผู้ยืนยัน"
+  renderActions={(p) =>
+    p.evaluation_status === 1 ? (
+      <span className="text-sm text-green-600">✅ ยืนยันทักษะแล้ว</span>
+    ) : (
+      <div className="flex gap-2">
+        <button
+          onClick={() => openSkillModal(p.student_id, p.full_name)}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          📝 ยืนยันทักษะ
+        </button>
+        <button
+          onClick={() => handleMarkAbsent(p.student_id, activityId)}
+          className="text-sm text-red-600 hover:underline"
+        >
+          ❌ ไม่มาเข้าร่วม
+        </button>
+      </div>
+    )
+  }
+/>
+
 
           <ParticipantList
             title="🎉 ผู้ที่เข้าร่วมกิจกรรมเรียบร้อยแล้ว"
             items={completed}
             variant="success"
+            empty="ยังไม่มีผู้เข้าร่วมกิจกรรมที่เสร็จสิ้น"
+          />
+
+          <ParticipantList
+            title="ผู้ที่ไม่มาเข้าร่วมกิจกรรม"
+            items={notattending}
+            variant="danger"
             empty="ยังไม่มีผู้เข้าร่วมกิจกรรมที่เสร็จสิ้น"
           />
 
@@ -828,6 +857,7 @@ function ParticipantList({ title, items, empty, variant, renderActions }: Partic
         {title.includes('ได้รับอนุมัติ') && <CheckCircle size={16} />}
         {title.includes('ยืนยันเข้าร่วม') && <CalendarCheck2 size={16} />}
         {title.includes('เข้าร่วมกิจกรรมเรียบร้อย') && <Brain size={16} />}
+        {title.includes('ผู้ที่ไม่มาเข้าร่วมกิจกรรม') && <XCircle size={16} />}
         {title.includes('ถูกปฏิเสธ') && <XCircle size={16} />}
         <span>{title.replace(/[🛎️✅📥🎉❌]/g, '').trim()}</span>
       </h3>

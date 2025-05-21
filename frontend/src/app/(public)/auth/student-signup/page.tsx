@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUp, confirmSignUp } from '@aws-amplify/auth';
+import { signUp, confirmSignUp, signIn,fetchAuthSession ,signOut} from '@aws-amplify/auth';
 import { checkStudentCodeExists, createStudent, getAllCurricula } from '@/lib/student';
 import type { Curriculum } from '@/types/models';
 import {
@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   Upload,
 } from 'lucide-react';
+import {deleteCognitoUser} from '@/lib/user';
+import { getAuthHeaders } from '@/lib/utils/auth';
 
 export default function StudentSignUpPage() {
   const router = useRouter();
@@ -30,10 +32,33 @@ export default function StudentSignUpPage() {
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const userSubRef = useRef<string | null>(null);
   const [studentCodeValid, setStudentCodeValid] = useState(true);
+  const [statusMessage, setStatusMessage] = useState('');
+   const [confirmed, setConfirmed] = useState(false);
+  const [auth, setAuth] = useState({
+    username: '',
+    password: '',
+    code: '',
+  });
 
   useEffect(() => {
     getAllCurricula().then(setCurricula);
   }, []);
+
+    useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (!confirmed && auth.username) {
+        try {
+          await deleteCognitoUser(auth.username);
+          console.log('ลบผู้ใช้จาก Cognito เรียบร้อยแล้ว');
+        } catch (err) {
+          console.error('ลบผู้ใช้ล้มเหลว', err);
+        }
+      }
+    };
+  
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [auth.username, confirmed]);
 
   const [form, setForm] = useState({
     student_code: '',
@@ -48,12 +73,6 @@ export default function StudentSignUpPage() {
     birth_date: '',
     gender: 'male',
     profile_picture_url: '',
-  });
-
-  const [auth, setAuth] = useState({
-    username: '',
-    password: '',
-    code: '',
   });
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -123,67 +142,93 @@ const handleNext = async () => {
     setLoading(false);
   };
 
-  const handleConfirm = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await confirmSignUp({
-        username: auth.username,
-        confirmationCode: auth.code,
-      });
 
-      const sub = userSubRef.current;
-      if (!sub) throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ (sub) ได้');
+const handleConfirm = async () => {
+  setError('');
+  setLoading(true);
+  setStatusMessage('กำลังยืนยันอีเมล...');
 
-      await fetch('http://localhost:8000/cognito/add-to-group', {
+  try {
+    // ✅ 1. Confirm sign up
+    await confirmSignUp({
+      username: auth.username,
+      confirmationCode: auth.code,
+    });
+
+    // ✅ 2. Sign in to get sub (userId)
+    setStatusMessage('กำลังเข้าสู่ระบบ...');
+    await signIn({ username: auth.username, password: auth.password });
+    const session = await fetchAuthSession();
+    const idTokenPayload = session.tokens?.idToken?.payload;
+    const sub = idTokenPayload?.sub;
+
+    if (!sub) throw new Error('ไม่สามารถดึง user sub จาก token ได้');
+
+    // ✅ 3. Add to Cognito group
+    setStatusMessage('กำลังเพิ่มเข้ากลุ่ม...');
+    await fetch('http://localhost:8000/cognito/add-to-group', {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({ username: auth.username, groupName: 'student' }),
+    });
+
+    // ✅ 4. Wait for sync to complete
+    setStatusMessage('กำลังประมวลผล...');
+    await new Promise((r) => setTimeout(r, 3000));
+
+    // ✅ 5. Upload profile picture (if any)
+    setStatusMessage('กำลังอัปโหลดรูปภาพ...');
+    let imageUrl = form.profile_picture_url;
+    if (profilePictureFile) {
+      const formData = new FormData();
+      formData.append('file', profilePictureFile);
+
+      const res = await fetch('http://localhost:8000/upload/upload-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: auth.username, groupName: 'student' }),
+                headers: {
+    Authorization: (await getAuthHeaders()).Authorization,
+  },
+        body: formData,
       });
 
-      let imageUrl = form.profile_picture_url;
-
-      if (profilePictureFile) {
-        const formData = new FormData();
-        formData.append('file', profilePictureFile);
-
-        const res = await fetch('http://localhost:8000/upload/upload-image', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!res.ok) throw new Error('อัปโหลดรูปโปรไฟล์ไม่สำเร็จ');
-
-        const { url } = await res.json();
-        imageUrl = url;
-      }
-
-      await createStudent({
-        id: sub,
-        user_id: sub,
-        student_code: form.student_code,
-        full_name: form.full_name,
-        faculty: form.faculty,
-        major: form.major,
-        year: Number(form.year),
-        curriculum_id: form.curriculum_id || null,
-        profile_picture_url: imageUrl,
-        email: form.email,
-        phone: form.phone,
-        gender: form.gender as 'male' | 'female' | 'other',
-        birth_date: form.birth_date,
-        line_id: form.line_id,
-        student_status: 'active',
-        is_active: true,
-      });
-
-      alert('สมัครสำเร็จ');
-      router.push('/auth/signin');
-    } catch (err: any) {
-      setError(err.message || 'ยืนยันไม่สำเร็จ');
+      if (!res.ok) throw new Error('อัปโหลดรูปโปรไฟล์ไม่สำเร็จ');
+      const { url } = await res.json();
+      imageUrl = url;
     }
-    setLoading(false);
-  };
+
+    // ✅ 6. Save to database
+    setStatusMessage('กำลังบันทึกข้อมูลผู้ใช้...');
+    await createStudent({
+      id: sub,
+      user_id: sub,
+      student_code: form.student_code,
+      full_name: form.full_name,
+      faculty: form.faculty,
+      major: form.major,
+      year: Number(form.year),
+      curriculum_id: form.curriculum_id || null,
+      profile_picture_url: imageUrl,
+      email: form.email,
+      phone: form.phone,
+      gender: form.gender as 'male' | 'female' | 'other',
+      birth_date: form.birth_date,
+      line_id: form.line_id,
+      student_status: 'active',
+      is_active: true,
+    });
+    setConfirmed(true);
+    alert('สมัครสำเร็จ');
+    await signOut();
+    router.push('/auth/signin');
+  } catch (err: any) {
+    setError(err.message || 'ยืนยันไม่สำเร็จ');
+  }
+
+  setStatusMessage('');
+  setLoading(false);
+};
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] from-gray-100 to-blue-100 px-4 py-10">
@@ -201,32 +246,43 @@ const handleNext = async () => {
         )}
 
         {step === 1 && (
+
           <div className="space-y-4">
+            <label htmlFor="student_code" className="text-sm text-gray-600">รหัสนักศึกษา</label>
             <Input icon={<UserPlus />} name="student_code" placeholder="รหัสนักศึกษา" onChange={handleChange} />
             {!studentCodeValid && (
   <p className="text-sm text-red-500">รหัสนักศึกษานี้ถูกใช้แล้ว</p>
 )}
-
+            <label htmlFor="full_name" className="text-sm text-gray-600">ชื่อ-นามสกุล</label>  
             <Input icon={<BookOpen />} name="full_name" placeholder="ชื่อ-นามสกุล" onChange={handleChange} />
+            <label htmlFor="faculty" className="text-sm text-gray-600">คณะ</label>
             <Input icon={<ShieldCheck />} name="faculty" placeholder="คณะ" onChange={handleChange} />
+            <label htmlFor="major" className="text-sm text-gray-600">สาขา</label>
             <Input icon={<BookOpen />} name="major" placeholder="สาขา" onChange={handleChange} />
+            <label htmlFor="year" className="text-sm text-gray-600">ชั้นปี</label>
             <Select
   name="year"
   value={form.year}
   onChange={handleChange}
   options={['1', '2', '3', '4'].map((y) => ({ label: `ชั้นปีที่ ${y}`, value: y }))}
 />
-
+            <label htmlFor="curriculum_id" className="text-sm text-gray-600">หลักสูตร</label>
             <Select name="curriculum_id" onChange={handleChange} options={curricula.map((c) => ({ label: c.name, value: c.id }))} />
+              <label htmlFor="birth_date" className="text-sm text-gray-600">เบอร์โทรศัพท์</label>
             <Input icon={<Phone />} name="phone" placeholder="เบอร์โทรศัพท์" onChange={handleChange} />
+            <label htmlFor="birth_date" className="text-sm text-gray-600">อีเมล</label>
             <Input icon={<Mail />} name="email" placeholder="อีเมล" onChange={handleChange} />
+            <label htmlFor="birth_date" className="text-sm text-gray-600">ไอดี ไลน์</label>
             <Input icon={<UserPlus />} name="line_id" placeholder="LINE ID" onChange={handleChange} />
+            <label htmlFor="birth_date" className="text-sm text-gray-600">วันเกิด</label>
             <Input icon={<Calendar />} name="birth_date" type="date" onChange={handleChange} />
+            <label htmlFor="birth_date" className="text-sm text-gray-600">เพศ</label>
             <Select name="gender" onChange={handleChange} options={[
               { label: 'ชาย', value: 'male' },
               { label: 'หญิง', value: 'female' },
               { label: 'อื่น ๆ', value: 'other' },
             ]} />
+            <label htmlFor="birth_date" className="text-sm text-gray-600">รูปปก</label>
             <Input icon={<Upload />} type="file" accept="image/*" onChange={handleFileChange} />
 
 <button
@@ -294,10 +350,26 @@ const handleNext = async () => {
         {step === 3 && (
           <div className="space-y-4">
             <Input icon={<ShieldCheck />} name="code" placeholder="กรอกรหัสยืนยันจากอีเมล" onChange={handleAuthChange} />
-            <button disabled={loading} onClick={handleConfirm} className="btn-success w-full flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              ยืนยันอีเมลและสมัครสมาชิก
-            </button>
+            {statusMessage && (
+  <div className="text-sm text-gray-600 flex items-center gap-2 justify-center">
+    <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+    <span>{statusMessage}</span>
+  </div>
+)}
+
+<button
+  disabled={loading}
+  onClick={handleConfirm}
+  className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white font-semibold transition 
+    ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:bg-green-800'}
+  `}
+>
+  <CheckCircle2 className="w-4 h-4" />
+  ยืนยันอีเมลและสมัครสมาชิก
+</button>
           </div>
         )}
       </div>

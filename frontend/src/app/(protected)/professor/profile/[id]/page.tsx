@@ -29,6 +29,7 @@ type Professor = {
   created_at: string;
   updated_at: string;
 };
+import Loading from '@/components/Loading';
 
 export default function ProfessorProfilePage() {
   const { id } = useParams();
@@ -42,8 +43,7 @@ export default function ProfessorProfilePage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading)
-    return <p className="p-6 text-center text-gray-600">⏳ กำลังโหลด...</p>;
+  if (loading) return <Loading />;  
   if (!professor)
     return <p className="p-6 text-center text-red-600">❌ ไม่พบข้อมูลอาจารย์</p>;
 

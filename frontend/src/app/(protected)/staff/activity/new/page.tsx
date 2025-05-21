@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createActivity, addSkillsToActivity } from '@/lib/activity';
 import { getAllSkills } from '@/lib/skill';
 import type { Skill } from '@/types/models';
-
+import { getAuthHeaders } from '@/lib/utils/auth';
 /* ------------------------------------------------------------------ */
 /* helpers & reusable inputs                                           */
 /* ------------------------------------------------------------------ */
@@ -121,6 +121,10 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       const res = await fetch('http://localhost:8000/upload/upload-image', {
         method: 'POST',
+        headers: {
+    Authorization: (await getAuthHeaders()).Authorization,
+  },
+        
         body: fd,
       });
       if (!res.ok) throw new Error('upload failed');

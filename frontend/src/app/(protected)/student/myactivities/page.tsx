@@ -26,7 +26,7 @@ import { getMyActivities } from '@/lib/student';
 import type { StudentActivityWithActivityInfo } from '@/types/models';
 import { formatDateThai } from '@/lib/utils/date';
 
-
+import Loading from '@/components/Loading';
 
 
 import { fetchAuthSession } from '@aws-amplify/auth';
@@ -61,19 +61,19 @@ const statusMeta: StatusInfo[] = [
     key: 'pending',
     label: 'รออนุมัติ',
     icon: <Hourglass className="w-4 h-4" />,
-    filter: (a) => a.status === 0,
+    filter: (a) => a.status === 0 && a.activity_status === 0,
   },
   {
     key: 'approved_not_confirmed',
     label: 'ยังไม่ยืนยัน',
     icon: <CalendarCheck className="w-4 h-4" />,
-    filter: (a) => a.status === 1 && a.confirmation_status === 0,
+    filter: (a) => a.status === 1 && a.confirmation_status === 0  && a.activity_status === 0,
   },
   {
     key: 'approved_confirmed',
     label: 'ยืนยันแล้ว',
     icon: <CheckCircle2 className="w-4 h-4" />,
-    filter: (a) => a.status === 1 && a.confirmation_status === 1,
+    filter: (a) => a.status === 1 && a.confirmation_status === 1  && a.activity_status === 0,
   },
   {
     key: 'approved_rejected',
@@ -91,15 +91,16 @@ const statusMeta: StatusInfo[] = [
     key: 'attended',
     label: 'เข้าร่วมแล้ว',
     icon: <FileCheck className="w-4 h-4" />,
-    filter: (a) => a.status === 3 && a.confirmation_status !== 2,
+    filter: (a) => a.status === 3 && a.confirmation_status !== 2 && a.attended === true,
   },
   {
     key: 'not_attended',
     label: 'ไม่ได้เข้าร่วม',
     icon: <AlertCircle className="w-4 h-4" />,
     filter: (a) =>
-      (a.status === 3 && a.confirmation_status === 2) ||
-      (a.activity_status === 3 && a.status === 1 && a.confirmation_status !== 1),
+      ( a.activity_status === 3 && a.attended === null ||
+        a.status === 3 && a.confirmation_status === 2) ||
+      (a.activity_status === 3 && a.status === 1 && a.attended === false),
   },
 ];
 
@@ -108,7 +109,7 @@ export default function MyActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('all');
-
+  
   //const studentId = 'cac8754c-b80d-4c33-a7c4-1bed9563ee1b';
 
 
@@ -217,7 +218,7 @@ export default function MyActivitiesPage() {
         </header>
 
         {loading ? (
-          <p className="text-center text-gray-600">⏳ กำลังโหลด…</p>
+          <Loading />
         ) : error ? (
           <p className="text-center text-red-600">{error}</p>
         ) : filtered.length === 0 ? (
@@ -225,6 +226,7 @@ export default function MyActivitiesPage() {
         ) : (
           <ul className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {filtered.map((a) => {
+              const notAttended = a.activity_status === 3 && a.attended === null;
               const showExtra =
                 (a.status === 1 || a.status === 3) && a.activity_status === 3;
 
@@ -244,52 +246,66 @@ export default function MyActivitiesPage() {
     <p className="text-sm text-gray-500 line-clamp-2">{a.activity_description}</p>
 
     {/* สถานะต่าง ๆ */}
-    <div className="mt-2 grid gap-2 text-sm text-gray-700">
-      <div className="flex items-center gap-2">
-        <CircleDot className="w-4 h-4 text-blue-500" />
-        สถานะกิจกรรม:
-        <span className="font-medium">
-          {{
-            0: 'เปิดรับ',
-            1: 'ปิดรับ',
-            2: 'ยกเลิก',
-            3: 'เสร็จสิ้น',
-          }[a.activity_status]}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        {a.status === 1 || a.status === 3 ? (
-          <ThumbsUp className="w-4 h-4 text-emerald-500" />
-        ) : a.status === 2 ? (
-          <ThumbsDown className="w-4 h-4 text-red-500" />
-        ) : (
-          <CircleDot className="w-4 h-4 text-gray-400" />
-        )}
-        สถานะการเข้าร่วม:
-        <span className="font-medium">
-          {{
+  
+
+
+<div className="mt-2 grid gap-2 text-sm text-gray-700">
+  <div className="flex items-center gap-2">
+    <CircleDot className="w-4 h-4 text-blue-500" />
+    สถานะกิจกรรม:
+    <span className="font-medium">
+      {{
+        0: 'เปิดรับ',
+        1: 'ปิดรับ',
+        2: 'ยกเลิก',
+        3: 'เสร็จสิ้น',
+      }[a.activity_status]}
+    </span>
+  </div>
+
+  <div className="flex items-center gap-2">
+{((a.status === 1 && !notAttended) || (a.status === 3 && a.attended === true)) ? (
+  <ThumbsUp className="w-4 h-4 text-emerald-500" />
+) : (
+  (a.status === 2 || (a.activity_status === 3 && a.attended === null) || a.attended === false || notAttended) ? (
+    <ThumbsDown className="w-4 h-4 text-red-500" />
+  ) : (
+    <CircleDot className="w-4 h-4 text-gray-400" />
+  )
+)}
+
+    สถานะการเข้าร่วม:
+    <span className="font-medium">
+      {notAttended
+        ? 'ไม่ได้เข้าร่วม'
+        : {
             0: 'รออนุมัติ',
             1: 'อนุมัติแล้ว',
             2: 'ไม่อนุมัติ',
             3: 'เข้าร่วมแล้ว',
           }[a.status]}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <CircleDot className="w-4 h-4 text-indigo-500" />
-        สถานะการยืนยัน:
-        <span className="font-medium">
-          {{
-            0: 'ยังไม่ยืนยัน',
-            1: 'ยืนยันแล้ว',
-            2: 'ไม่เข้าร่วม',
-          }[a.confirmation_status ?? -1] ?? '—'}
-        </span>
-      </div>
+    </span>
+  </div>
+
+  {!notAttended && (
+    <div className="flex items-center gap-2">
+      <CircleDot className="w-4 h-4 text-indigo-500" />
+      สถานะการยืนยัน:
+      <span className="font-medium">
+        {{
+          0: 'ยังไม่ยืนยัน',
+          1: 'ยืนยันแล้ว',
+          2: 'ไม่เข้าร่วม',
+        }[a.confirmation_status ?? -1] ?? '—'}
+      </span>
     </div>
+  )}
+</div>
+
+
 
     {/* การประเมิน/feedback */}
-    {showExtra && (
+    {showExtra && !notAttended && (
       <div className="mt-3 grid gap-2 text-sm">
         <div className="flex items-center gap-2">
           {a.evaluation_status === 1 ? (

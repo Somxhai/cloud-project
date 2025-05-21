@@ -16,7 +16,8 @@ import { cognitoApp } from "./handler/cognito.ts";
 //import { authApp } from "./database/service/authHandler.ts";
 import { studentActivityApp } from "./handler/student_activity.ts";
 import { progressApp } from "./handler/skillProgress.ts";
-import { uploadApp } from "./handler/upload.ts"; // ✅ เพิ่ม
+import { uploadApp } from "./handler/upload.ts"; 
+import {publicApp} from "./handler/publicHandler.ts"; 
 
 const app = new Hono();
 
@@ -53,6 +54,7 @@ app.route("/cognito", cognitoApp);
 //app.route("/auth", authApp);
 app.route("/progress", progressApp);
 app.route("/upload", uploadApp);
+app.route("/public", publicApp);
 
 app.route("/student-activity", studentActivityApp);
 // Start server

@@ -12,6 +12,7 @@ import {
   Eye,
   LayoutList,
 } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 export default function ActivityEnrollPage() {
   const [activities, setActivities] = useState<ActivityWithSkills[]>([]);
@@ -41,7 +42,7 @@ export default function ActivityEnrollPage() {
 
   );
 
-  if (loading) return <p className="p-6 text-center text-gray-600">⏳ กำลังโหลดกิจกรรม...</p>;
+  if (loading) return <Loading />;
   if (error) return <p className="p-6 text-center text-red-600">⚠ {error}</p>;
 
   const statusMap = {
@@ -59,7 +60,13 @@ export default function ActivityEnrollPage() {
       </header>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {activities
+          {activities.filter((a) => a.is_published).length === 0 ? (
+    <div className="col-span-full text-center text-gray-500 py-12 space-y-2">
+      <LayoutList className="mx-auto w-10 h-10 text-gray-400" />
+      <p className="text-lg font-medium">ขออภัย ขณะนี้ยังไม่มีกิจกรรมเปิดให้ลงทะเบียน</p>
+    </div>
+  ) : (
+        activities
           .filter((a) => a.is_published)
           .map((a) => {
             const status = statusMap[a.status as 0 | 1 | 2 | 3] ?? {
@@ -126,7 +133,8 @@ export default function ActivityEnrollPage() {
                 </div>
               </article>
             );
-          })}
+          })
+        )}
       </div>
     </div>
   );

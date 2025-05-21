@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUp, confirmSignUp } from '@aws-amplify/auth';
+import { signUp, confirmSignUp,signOut } from '@aws-amplify/auth';
 import { createProfessor } from '@/lib/professor';
 import '@/lib/amplifyConfig';
 import {
@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   CheckCircle2,
 } from 'lucide-react';
+import { getAuthHeaders } from '@/lib/utils/auth';
 
 const positionOptions = [
   'ศาสตราจารย์ ดร.',
@@ -35,6 +36,7 @@ export default function ProfessorSignUpPage() {
   const [error, setError] = useState('');
   const userSubRef = useRef<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [statusMessage, setStatusMessage] = useState('');
 
   const [form, setForm] = useState({
     full_name: '',
@@ -72,6 +74,9 @@ export default function ProfessorSignUpPage() {
     try {
       const res = await fetch('http://localhost:8000/upload/upload-image', {
         method: 'POST',
+                headers: {
+    Authorization: (await getAuthHeaders()).Authorization,
+  },
         body: fd,
       });
       if (!res.ok) throw new Error('upload failed');
@@ -100,41 +105,63 @@ export default function ProfessorSignUpPage() {
     setLoading(false);
   };
 
-  const handleConfirm = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await confirmSignUp({
-        username: auth.username,
-        confirmationCode: auth.code,
-      });
+const handleConfirm = async () => {
+  setError('');
+  setLoading(true);
+  setStatusMessage('กำลังยืนยันอีเมล...');
 
-      const sub = userSubRef.current;
-      if (!sub) throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ (sub) ได้');
-      await fetch('http://localhost:8000/cognito/add-to-group', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: auth.username, groupName: 'professor' }),
-      });
-      await createProfessor({
-        id: sub,
-        user_id: sub,
-        full_name: form.full_name,
-        email: form.email,
-        phone: form.phone,
-        department: form.department,
-        faculty: form.faculty,
-        position: form.position,
-        profile_picture_url: form.profile_picture_url,
-      });
+  try {
+    // ✅ 1. Confirm sign up
+    await confirmSignUp({
+      username: auth.username,
+      confirmationCode: auth.code,
+    });
 
-      alert('สมัครสมาชิกสำเร็จ');
-      router.push('/auth/signin');
-    } catch (err: any) {
-      setError(err.message || 'ยืนยันไม่สำเร็จ');
-    }
-    setLoading(false);
-  };
+    // ✅ 2. Sign in to get sub
+    setStatusMessage('กำลังเข้าสู่ระบบ...');
+    const { signIn, fetchAuthSession } = await import('@aws-amplify/auth');
+    await signIn({ username: auth.username, password: auth.password });
+    const session = await fetchAuthSession();
+    const sub = session.tokens?.idToken?.payload?.sub;
+
+    if (!sub) throw new Error('ไม่สามารถดึง user sub จาก token ได้');
+
+    // ✅ 3. Add to group
+    setStatusMessage('กำลังเพิ่มเข้ากลุ่ม...');
+    await fetch('http://localhost:8000/cognito/add-to-group', {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({ username: auth.username, groupName: 'professor' }),
+    });
+
+    // ✅ 4. Wait for backend to sync
+    setStatusMessage('กำลังประมวลผล...');
+    await new Promise((r) => setTimeout(r, 3000));
+
+    // ✅ 5. Save to DB
+    setStatusMessage('กำลังบันทึกข้อมูลผู้ใช้...');
+    await createProfessor({
+      id: sub,
+      user_id: sub,
+      full_name: form.full_name,
+      email: form.email,
+      phone: form.phone,
+      department: form.department,
+      faculty: form.faculty,
+      position: form.position,
+      profile_picture_url: form.profile_picture_url,
+    });
+
+    alert('สมัครสมาชิกสำเร็จ');
+    await signOut();
+    router.push('/auth/signin');
+  } catch (err: any) {
+    setError(err.message || 'ยืนยันไม่สำเร็จ');
+  }
+
+  setStatusMessage('');
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] from-gray-100 to-blue-100 px-4 py-10">
@@ -209,10 +236,28 @@ export default function ProfessorSignUpPage() {
         {step === 3 && (
           <div className="space-y-4">
             <Input icon={<ShieldCheck />} name="code" placeholder="กรอกรหัสยืนยันจากอีเมล" onChange={handleAuthChange} />
-            <button disabled={loading} onClick={handleConfirm} className="btn-success w-full flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-5 h-5" />
-              ยืนยันอีเมลและสมัครสมาชิก
-            </button>
+            {statusMessage && (
+  <div className="text-sm text-gray-600 flex items-center gap-2 justify-center">
+    <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+    <span>{statusMessage}</span>
+  </div>
+)}
+
+<button
+  disabled={loading}
+  onClick={handleConfirm}
+  className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-white transition
+    ${loading
+      ? 'bg-gray-400 cursor-not-allowed'
+      : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 focus:ring-2 focus:ring-emerald-300 focus:outline-none'}
+  `}
+>
+  <CheckCircle2 className="w-5 h-5" />
+  ยืนยันอีเมลและสมัครสมาชิก
+</button>
           </div>
         )}
       </div>

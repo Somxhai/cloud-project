@@ -60,3 +60,21 @@ export const confirmAttendanceStatus = async (
     'Failed to confirm attendance'
   );
 };
+
+
+
+export async function updateStudentAttendance(studentId: string, activityId: string, attended: boolean) {
+  return await safeQuery(async (client) => {
+    const result = await client.queryObject`
+      UPDATE student_activity
+      SET attended = ${attended}
+      WHERE student_id = ${studentId} AND activity_id = ${activityId}
+    `;
+
+    if (result.rowCount === 0) {
+      throw new Error('ไม่พบข้อมูล student_activity ที่ต้องการอัปเดต');
+    }
+
+    return { success: true };
+  }, 'Failed to update student attendance');
+}

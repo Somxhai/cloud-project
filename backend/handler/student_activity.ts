@@ -3,6 +3,7 @@ import {
   confirmAttendanceStatus,
   getStudentActivityStatus,
   joinActivity,
+  updateStudentAttendance
 } from "../database/service/student_activity.ts";
 import { UUIDTypes } from "../lib/uuid.ts";
 import { cognitoMiddleware } from "../middleware.ts";
@@ -54,3 +55,21 @@ studentActivityApp.put("/:studentId/confirm", async (c) => {
   return c.json({ success: true });
 });
 
+
+studentActivityApp.post('/mark-attendance', async (c) => {
+  const body = await c.req.json();
+  const { student_id, activity_id, attended } = body;
+
+  if (!student_id || !activity_id || typeof attended !== 'boolean') {
+    return c.json({ error: 'ข้อมูลไม่ครบหรือไม่ถูกต้อง' }, 400);
+  }
+
+  try {
+    await updateStudentAttendance(student_id, activity_id, attended);
+    return c.json({ message: 'อัปเดตการเข้าร่วมกิจกรรมสำเร็จ' });
+  } catch (err) {
+    console.error(err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return c.json({ error: errorMessage }, 500);
+  }
+});

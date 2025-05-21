@@ -14,7 +14,7 @@ import {
 import { formatDateThai } from '@/lib/utils/date';
 import type { ActivityWithFullSkills } from '@/types/models';
 import { getCurrentUserId } from '@/lib/auth';
-
+import Loading from '@/components/Loading';
 import {
   Info,
   CalendarDays,
@@ -63,7 +63,7 @@ export default function StudentActivityDetailPage() {
       try {
         const a = await getActivityDetail(activityId);
         setActivity(a);
-
+        setStateLoading(true);
         if (userId) {
           try {
             const st = await getStudentActivityStatus(userId, activityId);
@@ -96,7 +96,9 @@ export default function StudentActivityDetailPage() {
     openDate.setDate(
       eventDate.getDate() - (activity.confirmation_days_before_event)
     );
-    return now >= openDate && now < eventDate;
+    const closeDate = new Date(eventDate);
+    closeDate.setDate(eventDate.getDate() - 1);
+    return now >= openDate && now < closeDate;
   })();
 
   /* ---------- actions ---------- */
@@ -112,12 +114,7 @@ export default function StudentActivityDetailPage() {
   };
 
   /* ---------- UI ---------- */
-  if (loading)
-    return (
-      <div className="flex h-[60vh] items-center justify-center text-gray-600">
-        กำลังโหลด…
-      </div>
-    );
+    if (loading) return <Loading />;
   if (error || !activity)
     return (
       <div className="p-6 text-center text-red-600">
@@ -225,7 +222,13 @@ export default function StudentActivityDetailPage() {
                       )
                     ).toISOString()
                   )}{' '}
-                  ถึง {formatDateThai(activity.event_date)}
+                  ถึง {formatDateThai(
+                    new Date(
+                      new Date(activity.event_date).setDate(
+                        new Date(activity.event_date).getDate() - 1
+                      )
+                    ).toISOString()
+                  )}
                 </li>
               </ul>
             </div>
@@ -284,13 +287,13 @@ export default function StudentActivityDetailPage() {
           <span className="rounded-full bg-red-100 px-6 py-2 text-sm font-medium text-red-700 shadow">
             ไม่ได้รับการอนุมัติ
           </span>
-        ) : joinStatus === 1 && confirmStatus === 0 && inConfirmWindow ? (
+        ) : joinStatus === 1 && confirmStatus === 0 && inConfirmWindow &&  (activity.status === 0 || activity.status === 1) ? (
           <>
             <button
               onClick={() => handleConfirm(true)}
               className="flex items-center gap-1 rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-emerald-700"
             >
-              <CheckCircle2 size={16} /> ยืนยัน
+              <CheckCircle2 size={16} /> ยืนยันเข้าร่วม
             </button>
             <button
               onClick={() => handleConfirm(false)}
@@ -328,7 +331,13 @@ export default function StudentActivityDetailPage() {
               </button>
             )}
           </>
-        ) : null}
+        ) : activity.status === 3 ? (
+          <span className="rounded-full bg-gray-100 px-6 py-2 text-sm font-medium text-gray-600 shadow">
+            ลงทะเบียนแต่ไม่เข้าร่วม
+          </span>
+          
+          
+        ): null}
       </div>
     </div>
   );

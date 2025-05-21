@@ -18,21 +18,7 @@ export default function StaffActivitiesPage() {
   const [activityList, setActivityList] = useState<ActivityWithSkills[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [recalculating, setRecalculating] = useState(false);
 
-  const handleRecalculateSkills = async () => {
-    if (!confirm('คุณต้องการคำนวณทักษะของนักศึกษาทั้งหมดใหม่ใช่หรือไม่?')) return;
-    setRecalculating(true);
-    try {
-      const res = await recalculateAllStudentSkills();
-      alert(res.message || 'คำนวณสำเร็จ');
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || 'เกิดข้อผิดพลาดในการคำนวณทักษะ');
-    } finally {
-      setRecalculating(false);
-    }
-  };
 
   useEffect(() => {
     const fetchActivities = async () => {

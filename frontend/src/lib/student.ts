@@ -187,7 +187,7 @@ export async function getActivityDetail(id: string): Promise<ActivityWithSkills>
 
 export async function getStudentActivityStatus(studentId: string, activityId: string) {
     const res = await fetch(`${BASE_URL}/student-activity/status?studentId=${studentId}&activityId=${activityId}`, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(),
     });
     if (!res.ok) throw new Error('ไม่สามารถดึงสถานะได้');
     const data = await res.json();
@@ -291,7 +291,7 @@ export async function submitFeedback(studentId: string, activityId: string): Pro
 
 
 export const checkStudentCodeExists = async (studentCode: string): Promise<boolean> => {
-    const res = await fetch(`${BASE_URL}/student/check-code?student_code=${encodeURIComponent(studentCode)}`, {
+    const res = await fetch(`${BASE_URL}/public/check-code?student_code=${encodeURIComponent(studentCode)}`, {
         headers: await getAuthHeaders()
 
     });

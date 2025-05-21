@@ -79,7 +79,7 @@ activityApp.get("/detail/:activityId", async (c) => {
 activityApp.use(cognitoMiddleware);
 
 activityApp.post("/", async (c) => {
-  const body = await c.req.json<Activity>();
+  const body = (await c.req.json()) as Activity;
 
   if (
     !body.name ||

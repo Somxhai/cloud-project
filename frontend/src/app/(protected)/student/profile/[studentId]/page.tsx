@@ -20,7 +20,7 @@ import {
   Baby,
   CheckCircle2,
 } from 'lucide-react';
-
+import Loading from '@/components/Loading';
 import {
   getStudentFullDetail,
   getStudentProgress,
@@ -84,12 +84,8 @@ export default function StudentProfilePage() {
     })();
   }, [studentId]);
 
-  if (loading)
-    return (
-      <div className="flex h-[60vh] items-center justify-center text-gray-600">
-        กำลังโหลด…
-      </div>
-    );
+if (loading) return <Loading />;
+
   if (!student || !progress)
     return (
       <div className="p-6 text-center text-red-600">ไม่พบข้อมูลนักศึกษา</div>

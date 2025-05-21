@@ -1,10 +1,10 @@
 // src/app/(protected)/staff/activity/[activityId]/edit/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getActivityById, updateActivity } from '@/lib/activity';
-
+import { getAuthHeaders } from '@/lib/utils/auth';
 /* ------------------------------------------------------------------ */
 /* helpers                                                            */
 /* ------------------------------------------------------------------ */
@@ -28,6 +28,8 @@ export default function EditActivityPage() {
   const [form, setForm] = useState<typeof emptyForm>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const latestImageUrl = useRef<string | null>(null);
 
   /* ------------------------------------------------------------------ */
   /* fetch activity detail                                              */
@@ -85,12 +87,18 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   try {
     const res = await fetch('http://localhost:8000/upload/upload-image', {
       method: 'POST',
+      headers: {
+        Authorization: (await getAuthHeaders()).Authorization,
+      },
       body: formData,
     });
 
     if (!res.ok) throw new Error('Upload failed');
 
     const { url } = await res.json();
+
+    // ✅ อัปเดตทั้ง ref และ state
+    latestImageUrl.current = url;
     setForm((prev) => ({ ...prev, cover_image_url: url }));
   } catch (err) {
     console.error(err);
@@ -98,20 +106,25 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await updateActivity(activityId, form);
-      alert('อัปเดตข้อมูลกิจกรรมสำเร็จ');
-      router.back();
-    } catch (e) {
-      alert('ไม่สามารถอัปเดตกิจกรรมได้');
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setSaving(true);
+  try {
+    const dataToSend = {
+      ...form,
+      cover_image_url: latestImageUrl.current || form.cover_image_url,
+    };
+
+    await updateActivity(activityId, dataToSend);
+    alert('อัปเดตข้อมูลกิจกรรมสำเร็จ');
+    router.back();
+  } catch (e) {
+    alert('ไม่สามารถอัปเดตกิจกรรมได้');
+    console.error(e);
+  } finally {
+    setSaving(false);
+  }
+};
 
   /* ------------------------------------------------------------------ */
   /* tiny input component                                               */

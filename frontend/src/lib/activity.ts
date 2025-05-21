@@ -112,6 +112,7 @@ export async function deleteActivity(id: string): Promise<Activity> {
  */
 export async function getActivityDetail(id: string): Promise<ActivityWithSkills> {
     const res = await fetch(`${BASE_URL}/activity/detail/${id}`, {
+        headers: await getAuthHeaders(), // ✅ แนบ token
         method: 'GET',
         cache: 'no-store',
     });
@@ -128,6 +129,7 @@ export async function getOpenActivities(): Promise<ActivityWithSkills[]> {
     const res = await fetch(`${BASE_URL}/activity/open`, {
         method: 'GET',
         cache: 'no-store',
+        headers: await getAuthHeaders(), // ✅ แนบ token
     });
 
     if (!res.ok) throw new Error('ไม่พบกิจกรรมที่เปิดรับ');
@@ -142,6 +144,7 @@ export async function getAllActivitiesWithSkills(): Promise<ActivityWithSkills[]
     const res = await fetch(`${BASE_URL}/activity/with-skills`, {
         method: 'GET',
         cache: 'no-store',
+        headers: await getAuthHeaders(), // ✅ แนบ token
     });
 
     if (!res.ok) throw new Error('ไม่พบข้อมูลกิจกรรมพร้อม skills');
@@ -229,13 +232,41 @@ export async function recalculateAllActivityAmount(): Promise<{ message: string 
 
 
 
+export async function saveActivityChanges(
+  id: string,
+  days: number,
+  is_published: boolean,
+  status: number
+) {
+  await Promise.all([
+    fetch(`${BASE_URL}/activity/${id}/confirm-days`, {
+      method: 'PUT',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({ days }),
+    }),
+    updateActivityPublish(id, is_published),
+    updateActivityStatus(id, status),
+  ]);
+}
 
 
 
 
 
 
+// เพิ่มใน lib/activity.ts หรือไฟล์ API client ที่ใช้
+export async function markStudentAbsent(studentId: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/activity/mark-absent`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ studentId }),
+  });
 
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to mark absent: ${err}`);
+  }
+}
 
 
 
@@ -416,9 +447,7 @@ export async function updateActivityStatus(id: string, status: number) {
 export async function recalculateAmount(activityId: string): Promise<number> {
     const res = await fetch(`${BASE_URL}/activity/recalculate-amount/${activityId}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: await getAuthHeaders(),
     });
 
     if (!res.ok) {
@@ -428,4 +457,27 @@ export async function recalculateAmount(activityId: string): Promise<number> {
 
     const data = await res.json();
     return data.amount;
+}
+
+
+
+export async function updateAttendance({
+  student_id,
+  activity_id,
+  attended,
+}: {
+  student_id: string;
+  activity_id: string;
+  attended: boolean;
+}): Promise<void> {
+  const res = await fetch(`${BASE_URL}/student-activity/mark-attendance`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ student_id, activity_id, attended }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`ไม่สามารถอัปเดตการเข้าร่วม: ${err}`);
+  }
 }

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { getStudentsWithSkillsByProfessor } from '@/lib/professor';
 import { getCurrentUserId } from '@/lib/auth';
-
+import Loading from '@/components/Loading';
 type SkillStatus = 1 | 2 | 3;
 
 type SkillEntry = {
@@ -72,7 +72,7 @@ export default function ProfessorDashboard() {
   const filteredStudents =
     tab === 'all' ? students : students.filter((s) => s.year === tab);
 
-  if (loading) return <p className="p-6">กำลังโหลดข้อมูล...</p>;
+if (loading) return <Loading />;
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10 space-y-10">

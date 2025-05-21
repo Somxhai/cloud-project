@@ -61,3 +61,18 @@ export async function getProfessorProfile(userId: string): Promise<ProfessorDeta
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 }
+
+
+
+export async function deleteCognitoUser(username: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/cognito/delete-user`, {
+    method: "POST",
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ username }),
+  });
+
+  if (!res.ok) {
+    const { error } = await res.json();
+    throw new Error(error || "ลบผู้ใช้ไม่สำเร็จ");
+  }
+}

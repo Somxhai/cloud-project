@@ -1,7 +1,7 @@
 // src/app/auth/staffsignup/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect  } from 'react';
 import { useRouter } from 'next/navigation';
 import { signUp, confirmSignUp } from '@aws-amplify/auth';
 import '@/lib/amplifyConfig';
@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ArrowLeft,
 } from 'lucide-react';
+import { deleteCognitoUser } from '@/lib/user';
 import { getAuthHeaders } from '@/lib/utils/auth';
 
 export default function StaffSignUpPage() {
@@ -21,6 +22,7 @@ export default function StaffSignUpPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
 
   const [auth, setAuth] = useState({
     username: '',
@@ -63,17 +65,34 @@ export default function StaffSignUpPage() {
 
       await fetch('http://localhost:8000/cognito/add-to-group', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthHeaders(),
         body: JSON.stringify({ username: auth.username, groupName: 'staff' }),
       });
       setStep(3);
       alert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
+      setConfirmed(true);
       router.push('/auth/signin');
     } catch (err: any) {
       setError(err.message || 'ยืนยันไม่สำเร็จ');
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+  const handleBeforeUnload = async () => {
+    if (!confirmed && auth.username) {
+      try {
+        await deleteCognitoUser(auth.username);
+        console.log('ลบผู้ใช้จาก Cognito เรียบร้อยแล้ว');
+      } catch (err) {
+        console.error('ลบผู้ใช้ล้มเหลว', err);
+      }
+    }
+  };
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [auth.username, confirmed]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] from-gray-100 to-blue-100 px-4 py-10">
@@ -136,13 +155,6 @@ export default function StaffSignUpPage() {
   <CheckCircle2 className="w-5 h-5" />
   ยืนยันอีเมล
 </button>
-            <button
-              onClick={() => setStep(1)}
-              className="text-sm text-gray-500 hover:underline flex items-center gap-1 justify-center"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              กลับ
-            </button>
           </div>
         )}
 

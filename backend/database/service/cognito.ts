@@ -33,3 +33,19 @@ export async function addUserToGroup(username: string, groupName: string) {
     throw err;
   }
 }
+
+
+
+export async function deleteCognitoUser(username: string) {
+  try {
+    await cognito.adminDeleteUser({
+      UserPoolId: userPoolId,
+      Username: username,
+    }).promise();
+
+    console.log(`🗑️ Deleted user ${username} from Cognito`);
+  } catch (err) {
+    console.error("❌ Failed to delete user:", err);
+    throw err;
+  }
+}
