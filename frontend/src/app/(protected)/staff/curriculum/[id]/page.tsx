@@ -2,8 +2,8 @@
 'use client';
 
 import type { CurriculumProgress } from '@/types/models';
-import { useEffect, useState, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import {
   getCurriculumDetail,
   getAllSkills,
@@ -28,7 +28,6 @@ import {
 /* ------------------------------------------------------------------ */
 export default function CurriculumPage() {
   const { id } = useParams() as { id: string };
-  const router = useRouter();
 
   /* ------------------------- base detail (view) -------------------- */
   const [detail, setDetail] = useState<CurriculumDetail | null>(null);

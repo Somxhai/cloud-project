@@ -12,7 +12,7 @@ import {
 import { getStudentSkills, getStudentSkillLogs } from '@/lib/skill';
 import type { Professor, Student, StudentSkill, StudentSkillLog } from '@/types/models';
 import { formatDateThaiA } from '@/lib/utils/date';
-import { GraduationCap, BookOpen, BookText, Users } from 'lucide-react';
+import { BookOpen, BookText, Users } from 'lucide-react';
 
 export default function ProfessorStudentManagementPage() {
   const [professors, setProfessors] = useState<Professor[]>([]);

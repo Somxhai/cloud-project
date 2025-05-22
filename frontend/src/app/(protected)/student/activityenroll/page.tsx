@@ -24,7 +24,7 @@ export default function ActivityEnrollPage() {
       try {
         const res = await getOpenActivities();
         setActivities(res);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Fetch error:', err);
         setError(err.message || 'เกิดข้อผิดพลาดในการโหลดกิจกรรม');
       } finally {

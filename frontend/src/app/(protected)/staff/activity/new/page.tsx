@@ -6,6 +6,7 @@ import { createActivity, addSkillsToActivity } from '@/lib/activity';
 import { getAllSkills } from '@/lib/skill';
 import type { Skill } from '@/types/models';
 import { getAuthHeaders } from '@/lib/utils/auth';
+import Image from 'next/image';
 /* ------------------------------------------------------------------ */
 /* helpers & reusable inputs                                           */
 /* ------------------------------------------------------------------ */
@@ -119,14 +120,17 @@ const handleSubmit = async (e: React.FormEvent) => {
       const fd = new FormData();
       fd.append('file', profilePictureFile);
 
-      const res = await fetch('http://localhost:8000/upload/upload-image', {
-        method: 'POST',
-        headers: {
-    Authorization: (await getAuthHeaders()).Authorization,
-  },
-        
-        body: fd,
-      });
+      const res = await fetch(
+			`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/upload-image`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: (await getAuthHeaders()).Authorization,
+				},
+
+				body: fd,
+			}
+		);
       if (!res.ok) throw new Error('upload failed');
       const { url } = await res.json();
       imageUrl = url;
@@ -219,7 +223,9 @@ const handleSubmit = async (e: React.FormEvent) => {
   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-0"
 />
 {profilePictureFile && (
-  <img
+  <Image
+    width={500}
+    height={200}
     src={URL.createObjectURL(profilePictureFile)}
     alt="preview"
     className="mt-2 h-32 rounded"
