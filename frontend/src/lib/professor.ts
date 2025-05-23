@@ -1,4 +1,3 @@
-"use server";
 import { ProfessorStudent } from "@/types/models";
 import { getAuthHeaders } from "./utils/auth";
 
@@ -64,6 +63,7 @@ export async function createProfessor(data: {
 	position?: string;
 	profile_picture_url?: string;
 }) {
+	console.log("env", process.env.NEXT_PUBLIC_API_BASE_URL);
 	const res = await fetch(
 		`${process.env.NEXT_PUBLIC_API_BASE_URL}/professor`,
 		{

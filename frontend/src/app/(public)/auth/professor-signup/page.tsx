@@ -1,9 +1,14 @@
 // src/app/auth/professorsignup/page.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signUp, confirmSignUp, signOut } from "@aws-amplify/auth";
+import {
+	signUp,
+	confirmSignUp,
+	signOut,
+	fetchAuthSession,
+} from "@aws-amplify/auth";
 import { createProfessor } from "@/lib/professor";
 import "@/lib/amplifyConfig";
 import {
@@ -39,6 +44,10 @@ export default function ProfessorSignUpPage() {
 	// const [profilePictureFile, setProfilePictureFile] = useState<File | null>(
 	// null
 	// );
+	const [profilePictureFile, setProfilePictureFile] = useState<File | null>(
+		null
+	);
+
 	const [statusMessage, setStatusMessage] = useState("");
 
 	const [form, setForm] = useState({
@@ -69,32 +78,25 @@ export default function ProfessorSignUpPage() {
 		setAuth((prev) => ({ ...prev, [name]: value }));
 	};
 
-	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-		// setProfilePictureFile(file);
-
-		const fd = new FormData();
-		fd.append("file", file);
-		try {
-			const res = await fetch(
-				`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/upload-image`,
-				{
-					method: "POST",
-					headers: {
-						Authorization: (await getAuthHeaders()).Authorization,
-					},
-					body: fd,
-				}
-			);
-			if (!res.ok) throw new Error("upload failed");
-			const { url } = await res.json();
-			setForm((prev) => ({ ...prev, profile_picture_url: url }));
-		} catch (err) {
-			console.error(err);
-			alert("อัปโหลดรูปภาพไม่สำเร็จ");
-		}
+		setProfilePictureFile(file);
 	};
+
+	useEffect(() => {
+		const checkSession = async () => {
+			try {
+				const session = await fetchAuthSession();
+				if (session.tokens?.idToken) {
+					router.replace("/auth/profile");
+				}
+			} catch {
+				// No session — do nothing
+			}
+		};
+		checkSession();
+	}, [router]);
 
 	const handleSignUp = async () => {
 		setError("");
@@ -149,10 +151,34 @@ export default function ProfessorSignUpPage() {
 					}),
 				}
 			);
-
-			// ✅ 4. Wait for backend to sync
-			setStatusMessage("กำลังประมวลผล...");
-			await new Promise((r) => setTimeout(r, 3000));
+			let imageUrl = "";
+			// ✅ Upload image if selected
+			if (profilePictureFile) {
+				setStatusMessage("กำลังอัปโหลดรูปภาพ...");
+				const fd = new FormData();
+				fd.append("file", profilePictureFile);
+				try {
+					const res = await fetch(
+						`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/upload-image`,
+						{
+							method: "POST",
+							headers: {
+								Authorization: (
+									await getAuthHeaders()
+								).Authorization,
+							},
+							body: fd,
+						}
+					);
+					if (!res.ok) throw new Error("upload failed");
+					const { url } = await res.json();
+					imageUrl = url;
+				} catch (err) {
+					console.error(err);
+					alert("อัปโหลดรูปภาพไม่สำเร็จ");
+				}
+			}
+			console.log("imageUrl", imageUrl);
 
 			// ✅ 5. Save to DB
 			setStatusMessage("กำลังบันทึกข้อมูลผู้ใช้...");
@@ -165,7 +191,7 @@ export default function ProfessorSignUpPage() {
 				department: form.department,
 				faculty: form.faculty,
 				position: form.position,
-				profile_picture_url: form.profile_picture_url,
+				profile_picture_url: imageUrl,
 			});
 
 			alert("สมัครสมาชิกสำเร็จ");

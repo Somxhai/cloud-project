@@ -156,6 +156,20 @@ export default function StudentSignUpPage() {
 		setLoading(false);
 	};
 
+	useEffect(() => {
+		const checkSession = async () => {
+			try {
+				const session = await fetchAuthSession();
+				if (session.tokens?.idToken) {
+					router.replace("/auth/profile");
+				}
+			} catch {
+				// No session — do nothing
+			}
+		};
+		checkSession();
+	}, [router]);
+
 	const handleConfirm = async () => {
 		setError("");
 		setLoading(true);
