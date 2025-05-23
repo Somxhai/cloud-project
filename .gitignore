@@ -1,5 +1,6 @@
 **/vscode/
 **/.env
+**/deno.lock
 
 **/node_modules/
 ./**/readme.md
