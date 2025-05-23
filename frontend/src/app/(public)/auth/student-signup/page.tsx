@@ -203,7 +203,7 @@ export default function StudentSignUpPage() {
 				formData.append("file", profilePictureFile);
 
 				const res = await fetch(
-					"http://localhost:8000/upload/upload-image",
+					`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/upload-image`,
 					{
 						method: "POST",
 						headers: {
