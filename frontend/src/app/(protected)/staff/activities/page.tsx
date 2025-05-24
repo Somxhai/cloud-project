@@ -78,14 +78,6 @@ export default function StaffActivitiesPage() {
 						</svg>
 						เพิ่มกิจกรรม
 					</Link>
-
-					<button
-						onClick={handleRecalculateSkills}
-						disabled={recalculating}
-						className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg text-sm sm:text-base font-medium disabled:opacity-60"
-					>
-						{recalculating ? "กำลังคำนวณ..." : "คำนวณทักษะใหม่"}
-					</button>
 				</div>
 			</div>
 
